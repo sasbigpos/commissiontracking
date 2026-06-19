@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales Commission Tracker</title>
+
+<!-- Firebase v10 (modular via compat shim for CDN) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- React -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #f5f6fa; --surface: #ffffff; --border: #e2e5ed;
+    --primary: #2563eb; --primary-light: #eff4ff;
+    --danger: #dc2626; --danger-light: #fef2f2;
+    --warn: #d97706; --warn-light: #fffbeb;
+    --success: #16a34a;
+    --text: #111827; --text-2: #4b5563; --text-3: #9ca3af;
+    --radius: 10px; --shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
+  h1,h2,h3,h4 { margin:0 0 .5rem; } p { margin:0; }
+  input,select,textarea { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; color:var(--text); background:#fff; font-family:inherit; outline:none; transition:border-color .15s; }
+  input:focus,select:focus,textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+  input:disabled,select:disabled { background:var(--bg); color:var(--text-2); }
+  label { display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:4px; }
+  textarea { resize:vertical; min-height:60px; }
+  button { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid var(--border); border-radius:6px; background:#fff; color:var(--text); font-size:13px; font-family:inherit; cursor:pointer; transition:background .12s,border-color .12s; }
+  button:hover { background:var(--bg); }
+  button.primary { background:var(--primary); color:#fff; border-color:var(--primary); }
+  button.primary:hover { background:#1d4ed8; }
+  button.icon { padding:5px 8px; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  .edit-btn { color:var(--primary); border-color:transparent; background:none; }
+  .edit-btn:hover { background:var(--primary-light); border-color:#c7d9fd; }
+  .delete-btn { color:var(--danger); border-color:transparent; background:none; }
+  .delete-btn:hover { background:var(--danger-light); border-color:#fca5a5; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; box-shadow:var(--shadow); }
+  .grid { display:grid; gap:12px; }
+  .g2 { grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+  .g3 { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead th { text-align:left; padding:8px 10px; font-weight:600; font-size:12px; color:var(--text-2); border-bottom:2px solid var(--border); white-space:nowrap; background:var(--bg); }
+  tbody td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:#f9fafb; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+  .badge-green { background:#dcfce7; color:#15803d; }
+  .badge-yellow { background:#fef9c3; color:#a16207; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
+  .stat-card .slabel { font-size:12px; color:var(--text-2); margin-bottom:4px; }
+  .stat-card .svalue { font-size:22px; font-weight:700; color:var(--text); }
+  .tab-bar { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:4px; margin-bottom:1.25rem; flex-wrap:wrap; }
+  .tab { padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-2); border:none; background:none; transition:background .12s,color .12s; }
+  .tab:hover { background:var(--bg); color:var(--text); }
+  .tab.active { background:var(--primary); color:#fff; }
+  .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:.75rem 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .topbar h1 { font-size:16px; font-weight:700; }
+  .main { max-width:1500px; margin:0 auto; padding:1.25rem 1.5rem; }
+  .filter-row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:1rem; }
+  .filter-row > div { min-width:140px; }
+  .commission-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .chead { background:var(--primary-light); border-bottom:1px solid #c7d9fd; padding:.85rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
+  .chead h3 { font-size:15px; color:var(--primary); margin:0; }
+  .commission-row { display:flex; gap:12px; align-items:center; padding:10px 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .rlabel { flex:1; min-width:200px; color:var(--text-2); font-size:13px; }
+  .rval { font-size:13px; min-width:120px; text-align:right; }
+  .rpct { font-size:12px; min-width:44px; text-align:center; background:var(--bg); border-radius:4px; padding:2px 6px; color:var(--text-2); border:1px solid var(--border); }
+  .rcomm { font-size:14px; font-weight:600; min-width:120px; text-align:right; color:var(--success); }
+  .rcomm.zero { color:var(--text-3); }
+  .commission-total { display:flex; justify-content:space-between; align-items:center; padding:12px 1.25rem; background:var(--bg); border-top:2px solid var(--border); }
+  .commission-total span:last-child { font-size:18px; font-weight:700; color:var(--primary); }
+  .total-payout { display:flex; justify-content:space-between; align-items:center; background:var(--primary); color:#fff; border-radius:var(--radius); padding:1rem 1.25rem; font-weight:600; font-size:15px; margin-top:8px; }
+  .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; background:var(--bg); }
+  .login-box { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:2rem; width:100%; max-width:380px; box-shadow:0 4px 24px rgba(0,0,0,.08); }
+  .hint-box { font-size:12px; color:var(--text-3); background:var(--bg); border-radius:6px; padding:10px; margin-top:1rem; }
+  .err { color:var(--danger); font-size:12px; margin-top:6px; padding:8px 10px; background:var(--danger-light); border-radius:6px; }
+  .warn-text { color:var(--warn); font-size:12px; margin-top:4px; }
+  .form-group { margin-bottom:12px; }
+  .ovx { overflow-x:auto; }
+  .empty { padding:2rem; text-align:center; color:var(--text-3); }
+  .pill { display:inline-block; border-radius:999px; padding:1px 10px; font-size:11px; font-weight:600; }
+  .pill-gray { background:var(--bg); color:var(--text-2); border:1px solid var(--border); }
+  .tier-note { font-size:12px; color:var(--text-2); margin-top:10px; }
+  .loading-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--text-2); font-size:14px; }
+  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .config-banner { background:var(--warn-light); border:1px solid #fcd34d; border-radius:var(--radius); padding:1.25rem; margin-bottom:1.25rem; }
+  .config-banner h3 { color:var(--warn); margin-bottom:8px; }
+  .config-banner code { background:#fff; padding:2px 6px; border-radius:4px; font-size:12px; border:1px solid var(--border); }
+  .sync-indicator { font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:4px; }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--success); }
+  .sync-dot.saving { background:var(--warn); animation:pulse .8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  @media(max-width:600px){ .topbar{padding:.75rem 1rem;} .main{padding:1rem;} .tab{padding:6px 10px;font-size:12px;} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// FIREBASE CONFIGURATION
+// Replace the values below with your own Firebase project config.
+// You get these from: Firebase Console → Project Settings → Your Apps → Web App
+// ─────────────────────────────────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyC1IUIIKGr9x5GEh6AuQPrV_4VroE6VbyU",
+  authDomain:        "commissiontracking-1ac0a.firebaseapp.com",
+  projectId:         "commissiontracking-1ac0a",
+  storageBucket:     "commissiontracking-1ac0a.firebasestorage.app",
+  messagingSenderId: "306865619840",
+  appId:             "1:306865619840:web:0c235bda808782394f7765"
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+const IS_CONFIGURED = !FIREBASE_CONFIG.apiKey.startsWith("YOUR_");
+
+const { createElement: h, useState, useEffect, useMemo, useCallback } = React;
+
+// ── Commission tier constants ─────────────────────────────────────────────────
+const BRANCHES = ["HQ","SWK","JHR","SBH","KL","PG","PHG"];
+const DEFAULT_SALES = ["Melvilline","Levin","Azfar","Jaery","Zani","Hong","Allan"];
+
+const NEWSUB_TIERS = [
+  { min:2256,     max:11280,    pct:0.08, label:"RM 2,256 – RM 11,280" },
+  { min:11281,    max:20304,    pct:0.12, label:"RM 11,281 – RM 20,304" },
+  { min:20304.01, max:Infinity, pct:0.18, label:"> RM 20,304" },
+];
+const RENEWAL_RATE_TIERS = [
+  { minNewSub:20000.01, pct:0.12, label:"> RM 20,000 new sub achieved" },
+  { minNewSub:14000.01, pct:0.09, label:"> RM 14,000 new sub achieved" },
+  { minNewSub:8000.01,  pct:0.06, label:"> RM 8,000 new sub achieved"  },
+];
+const RENEWAL_BASE_PCT = 0.03;
+
+function getRenewalRate(newSubSw) {
+  for (const t of RENEWAL_RATE_TIERS) if (newSubSw >= t.minNewSub) return t;
+  return null;
+}
+function getTier(v, tiers) {
+  for (const t of tiers) if (v >= t.min && v <= t.max) return t;
+  return null;
+}
+function fmt(n) { return "RM"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pctStr(n) { return (n*100).toFixed(0)+"%"; }
+function num(v) { return Number(v)||0; }
+
+const emptyInvoice = () => ({
+  date:"", invoiceNo:"", customer:"",
+  hardwareValue:"", softwareValue:"",
+  softwareCase:"", newSub:"0", renewal:"0",
+  branch:BRANCHES[0], salesPerson:"", status:"Paid", remark:""
+});
+
+// ── Firebase / Firestore helpers ──────────────────────────────────────────────
+let db = null;
+
+function initFirebase() {
+  if (!IS_CONFIGURED) return false;
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    return true;
+  } catch(e) {
+    console.error("Firebase init error:", e);
+    return false;
+  }
+}
+
+// Collections: "users", "invoices", "settings" (doc: "salesPeople")
+async function fsGetAll(collection) {
+  const snap = await db.collection(collection).get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+async function fsSet(collection, id, data) {
+  await db.collection(collection).doc(id).set(data);
+}
+async function fsAdd(collection, data) {
+  const ref = await db.collection(collection).add(data);
+  return ref.id;
+}
+async function fsUpdate(collection, id, data) {
+  await db.collection(collection).doc(id).update(data);
+}
+async function fsDelete(collection, id) {
+  await db.collection(collection).doc(id).delete();
+}
+
+// ── Default users (seeded into Firestore on first run) ───────────────────────
+const DEFAULT_USERS = [
+  { username:"admin",      password:"admin123",      role:"admin", name:"Admin"      },
+  ...DEFAULT_SALES.map(n=>({ username:n.toLowerCase(), password:n.toLowerCase()+"123", role:"sales", name:n }))
+];
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App() {
+  const [fbReady,      setFbReady]      = useState(false);
+  const [fbError,      setFbError]      = useState("");
+  const [appLoading,   setAppLoading]   = useState(true);
+  const [saving,       setSaving]       = useState(false);
+
+  const [users,        setUsers]        = useState([]);
+  const [invoices,     setInvoices]     = useState([]);
+  const [salesPeople,  setSalesPeople]  = useState(DEFAULT_SALES);
+
+  const [currentUser,  setCurrentUser]  = useState(null);
+  const [loginForm,    setLoginForm]    = useState({username:"",password:""});
+  const [loginError,   setLoginError]   = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const [tab,          setTab]          = useState("invoices");
+  const [form,         setForm]         = useState(emptyInvoice());
+  const [editingId,    setEditingId]    = useState(null);
+  const [filterMonth,  setFilterMonth]  = useState("");
+  const [filterPerson, setFilterPerson] = useState("");
+  const [reportMonth,  setReportMonth]  = useState("");
+  const [reportPerson, setReportPerson] = useState("");
+  const [newSalesName, setNewSalesName] = useState("");
+  const [newUserForm,  setNewUserForm]  = useState({username:"",password:"",name:""});
+
+  // ── Init Firebase & load data ───────────────────────────────────────────────
+  useEffect(()=>{
+    if (!IS_CONFIGURED) { setAppLoading(false); return; }
+    const ok = initFirebase();
+    if (!ok) { setFbError("Firebase initialisation failed. Check your config."); setAppLoading(false); return; }
+    setFbReady(true);
+    loadAll();
+  }, []);
+
+  async function loadAll() {
+    try {
+      // Load users; seed defaults if empty
+      let usersData = await fsGetAll("users");
+      if (usersData.length === 0) {
+        for (const u of DEFAULT_USERS) {
+          await fsSet("users", u.username, u);
+        }
+        usersData = DEFAULT_USERS.map(u=>({...u, id:u.username}));
+      }
+      setUsers(usersData);
+
+      // Load invoices
+      const invoicesData = await fsGetAll("invoices");
+      setInvoices(invoicesData);
+
+      // Load sales people setting
+      try {
+        const snap = await db.collection("settings").doc("salesPeople").get();
+        if (snap.exists) setSalesPeople(snap.data().list || DEFAULT_SALES);
+        else await db.collection("settings").doc("salesPeople").set({ list: DEFAULT_SALES });
+      } catch(e) {}
+
+    } catch(e) {
+      setFbError("Failed to load data from Firestore: " + e.message);
+    }
+    setAppLoading(false);
+  }
+
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  async function handleLogin(e) {
+    e.preventDefault();
+    setLoginLoading(true); setLoginError("");
+    try {
+      const uname = loginForm.username.trim().toLowerCase();
+      const snap = await db.collection("users").doc(uname).get();
+      if (!snap.exists || snap.data().password !== loginForm.password) {
+        setLoginError("Invalid username or password."); setLoginLoading(false); return;
+      }
+      const u = snap.data();
+      setCurrentUser(u);
+      if (u.role==="sales") { setForm(f=>({...f,salesPerson:u.name})); setReportPerson(u.name); }
+    } catch(e) {
+      setLoginError("Login error: "+e.message);
+    }
+    setLoginLoading(false);
+  }
+
+  function logout() { setCurrentUser(null); setLoginForm({username:"",password:""}); setTab("invoices"); }
+
+  const isAdmin = currentUser && currentUser.role==="admin";
+
+  // ── Invoice CRUD ─────────────────────────────────────────────────────────────
+  function resetForm() {
+    setForm({...emptyInvoice(), salesPerson:currentUser&&currentUser.role==="sales"?currentUser.name:""});
+    setEditingId(null);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.date||!form.invoiceNo||!form.customer||!form.salesPerson) {
+      alert("Please fill in Date, Invoice No, Customer and Sales Person."); return;
+    }
+    const cleaned = {
+      ...form,
+      hardwareValue: num(form.hardwareValue),
+      softwareValue: num(form.softwareValue),
+      softwareCase:  num(form.softwareCase),
+      newSub:  num(form.newSub),
+      renewal: num(form.renewal),
+      updatedAt: new Date().toISOString(),
+    };
+    setSaving(true);
+    try {
+      if (editingId) {
+        await fsUpdate("invoices", editingId, cleaned);
+        setInvoices(prev=>prev.map(i=>i.id===editingId?{...cleaned,id:editingId}:i));
+      } else {
+        cleaned.createdAt = new Date().toISOString();
+        const newId = await fsAdd("invoices", cleaned);
+        setInvoices(prev=>[...prev, {...cleaned, id:newId}]);
+      }
+      resetForm();
+    } catch(e) { alert("Save failed: "+e.message); }
+    setSaving(false);
+  }
+
+  async function deleteInvoice(id) {
+    if (!confirm("Delete this invoice record?")) return;
+    setSaving(true);
+    try {
+      await fsDelete("invoices", id);
+      setInvoices(prev=>prev.filter(i=>i.id!==id));
+      if (editingId===id) resetForm();
+    } catch(e) { alert("Delete failed: "+e.message); }
+    setSaving(false);
+  }
+
+  // ── Settings ─────────────────────────────────────────────────────────────────
+  async function saveSalesPeople(next) {
+    setSalesPeople(next);
+    try { await db.collection("settings").doc("salesPeople").set({ list: next }); } catch(e) {}
+  }
+
+  async function addSalesPerson() {
+    const n = newSalesName.trim();
+    if (!n || salesPeople.includes(n)) return;
+    await saveSalesPeople([...salesPeople, n]);
+    setNewSalesName("");
+  }
+
+  async function removeSalesPerson(name) {
+    if (!confirm('Remove "'+name+'" from sales person list?')) return;
+    await saveSalesPeople(salesPeople.filter(s=>s!==name));
+  }
+
+  async function addUser() {
+    if (!newUserForm.username.trim()||!newUserForm.password.trim()||!newUserForm.name.trim()) {
+      alert("Fill in all fields."); return;
+    }
+    const uname = newUserForm.username.trim().toLowerCase();
+    if (users.some(u=>u.username.toLowerCase()===uname)) { alert("Username already exists."); return; }
+    const newUser = { username:uname, password:newUserForm.password.trim(), role:"sales", name:newUserForm.name.trim() };
+    setSaving(true);
+    try {
+      await fsSet("users", uname, newUser);
+      setUsers(prev=>[...prev, {...newUser, id:uname}]);
+      if (!salesPeople.includes(newUser.name)) await saveSalesPeople([...salesPeople, newUser.name]);
+      setNewUserForm({username:"",password:"",name:""});
+    } catch(e) { alert("Failed to add user: "+e.message); }
+    setSaving(false);
+  }
+
+  async function removeUser(username) {
+    if (username==="admin") return;
+    if (!confirm('Remove user "'+username+'"?')) return;
+    setSaving(true);
+    try {
+      await fsDelete("users", username);
+      setUsers(prev=>prev.filter(u=>u.username!==username));
+    } catch(e) { alert("Failed to remove user: "+e.message); }
+    setSaving(false);
+  }
+
+  // ── Derived data ──────────────────────────────────────────────────────────────
+  const visibleInvoices = useMemo(()=>{
+    if (!currentUser) return [];
+    if (isAdmin) return invoices;
+    return invoices.filter(i=>i.salesPerson===currentUser.name);
+  }, [invoices, currentUser]);
+
+  const filteredInvoices = useMemo(()=>visibleInvoices.filter(i=>{
+    if (filterMonth && i.date && i.date.slice(0,7)!==filterMonth) return false;
+    if (isAdmin && filterPerson && i.salesPerson!==filterPerson) return false;
+    return true;
+  }), [visibleInvoices, filterMonth, filterPerson, isAdmin]);
+
+  const totals = useMemo(()=>filteredInvoices.reduce((acc,i)=>({
+    hardware: acc.hardware+num(i.hardwareValue),
+    software: acc.software+num(i.softwareValue),
+    total:    acc.total+num(i.hardwareValue)+num(i.softwareValue),
+    cases:    acc.cases+num(i.softwareCase),
+  }),{hardware:0,software:0,total:0,cases:0}), [filteredInvoices]);
+
+  const reportData = useMemo(()=>{
+    if (!currentUser) return [];
+    let pool = invoices;
+    if (!isAdmin) pool = pool.filter(i=>i.salesPerson===currentUser.name);
+    if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
+    if (isAdmin&&reportPerson) pool = pool.filter(i=>i.salesPerson===reportPerson);
+
+    const byPerson = {};
+    pool.forEach(i=>{
+      const sp = i.salesPerson||"Unassigned";
+      if (!byPerson[sp]) byPerson[sp]={renewalSw:0,newSubSw:0,count:0};
+      const sw = num(i.softwareValue);
+      if (num(i.newSub)>0) byPerson[sp].newSubSw += sw;
+      else if (num(i.renewal)>0) byPerson[sp].renewalSw += sw;
+      byPerson[sp].count++;
+    });
+
+    return Object.entries(byPerson).map(([name,d])=>{
+      const nTier   = getTier(d.newSubSw, NEWSUB_TIERS);
+      const nPct    = nTier ? nTier.pct : 0;
+      const nComm   = d.newSubSw * nPct;
+      const rRateTier = getRenewalRate(d.newSubSw);
+      const rPct    = rRateTier ? rRateTier.pct : RENEWAL_BASE_PCT;
+      const rComm   = d.renewalSw * rPct;
+      return {name,...d,rPct,nPct,rComm,nComm,nTier,rRateTier,totalCommission:rComm+nComm};
+    }).sort((a,b)=>a.name.localeCompare(b.name));
+  }, [invoices, currentUser, reportMonth, reportPerson, isAdmin]);
+
+  // ── Render: not configured ────────────────────────────────────────────────────
+  if (!IS_CONFIGURED) return h("div",{style:{maxWidth:680,margin:"2rem auto",padding:"0 1rem"}},
+    h("div",{className:"config-banner"},
+      h("h3",null,"⚙️ Firebase configuration required"),
+      h("p",{style:{fontSize:13,color:"var(--text-2)",marginBottom:"1rem",lineHeight:1.7}},
+        "Open ",h("code",null,"index.html")," in a text editor and replace the placeholder values in the ",
+        h("code",null,"FIREBASE_CONFIG")," block near the top of the file with your actual Firebase project credentials. ",
+        "See ",h("code",null,"SETUP.md")," for full step-by-step instructions."
+      ),
+      h("pre",{style:{background:"#fff",border:"1px solid var(--border)",borderRadius:6,padding:"1rem",fontSize:12,overflowX:"auto"}},
+`const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSy...",
+  authDomain:        "my-project.firebaseapp.com",
+  projectId:         "my-project",
+  storageBucket:     "my-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId:             "1:123456789:web:abc123"
+};`)
+    )
+  );
+
+  // ── Render: loading ───────────────────────────────────────────────────────────
+  if (appLoading) return h("div",{className:"loading-screen"},
+    h("div",{className:"spinner"}),
+    h("span",null,"Connecting to Firestore...")
+  );
+
+  // ── Render: Firebase error ────────────────────────────────────────────────────
+  if (fbError) return h("div",{style:{maxWidth:560,margin:"2rem auto",padding:"0 1rem"}},
+    h("div",{className:"config-banner"},
+      h("h3",null,"Firebase Error"),
+      h("p",{style:{fontSize:13}},fbError),
+      h("p",{style:{fontSize:12,color:"var(--text-3)",marginTop:8}},"Check your Firebase config and Firestore security rules. See SETUP.md for help.")
+    )
+  );
+
+  // ── Render: login ─────────────────────────────────────────────────────────────
+  if (!currentUser) return h("div",{className:"login-wrap"},
+    h("div",{className:"login-box"},
+      h("h2",null,"Sales Commission Tracker"),
+      h("p",{style:{color:"var(--text-2)",fontSize:13,marginBottom:"1.25rem"}},"Sign in to your account"),
+      h("form",{onSubmit:handleLogin},
+        h("div",{className:"form-group"},
+          h("label",null,"Username"),
+          h("input",{value:loginForm.username,autoFocus:true,disabled:loginLoading,onChange:e=>setLoginForm({...loginForm,username:e.target.value})})
+        ),
+        h("div",{className:"form-group"},
+          h("label",null,"Password"),
+          h("input",{type:"password",value:loginForm.password,disabled:loginLoading,onChange:e=>setLoginForm({...loginForm,password:e.target.value})})
+        ),
+        loginError&&h("p",{className:"err"},loginError),
+        h("button",{type:"submit",className:"primary",disabled:loginLoading,style:{width:"100%",marginTop:8,padding:"9px"}},
+          loginLoading?"Signing in...":"Sign in")
+      ),
+      h("div",{className:"hint-box"},
+        h("strong",null,"Default credentials"),h("br"),
+        "Admin: admin / admin123",h("br"),
+        "Sales: firstname / firstname123",h("br"),
+        h("em",{style:{color:"var(--text-3)"}},"e.g. levin / levin123")
+      )
+    )
+  );
+
+  const tabs=[["invoices","Invoices"],["commission","Commission"],["tiers","Tier Rates"],...(isAdmin?[["settings","Settings"]]:[])];
+
+  // ── Render: main app ──────────────────────────────────────────────────────────
+  return h("div",null,
+    h("div",{className:"topbar"},
+      h("div",null,
+        h("h1",null,"Sales Commission Tracker"),
+        h("span",{style:{fontSize:12,color:"var(--text-2)"}},"Signed in as ",h("strong",null,currentUser.name)," · ",currentUser.role)
+      ),
+      h("div",{style:{display:"flex",alignItems:"center",gap:12}},
+        h("div",{className:"sync-indicator"},
+          h("div",{className:"sync-dot"+(saving?" saving":"")}),
+          saving?"Saving...":"Synced"
+        ),
+        h("button",{onClick:logout},"Sign out")
+      )
+    ),
+
+    h("div",{className:"main"},
+      h("div",{className:"tab-bar"},
+        tabs.map(([key,label])=>h("button",{key,className:"tab"+(tab===key?" active":""),onClick:()=>setTab(key)},label))
+      ),
+
+      /* ── INVOICES ── */
+      tab==="invoices"&&h("div",null,
+        h("div",{className:"card",style:{marginBottom:"1.25rem"}},
+          h("h3",{style:{marginBottom:"1rem",fontSize:15}},editingId?"Edit Invoice":"Add Invoice"),
+          h("form",{onSubmit:handleSubmit},
+            h("div",{className:"grid g2"},
+              h("div",null,h("label",null,"Payment / Invoice Date"),h("input",{type:"date",value:form.date,onChange:e=>setForm({...form,date:e.target.value})})),
+              h("div",null,h("label",null,"Invoice No"),h("input",{value:form.invoiceNo,placeholder:"e.g. PI_23001",onChange:e=>setForm({...form,invoiceNo:e.target.value})})),
+              h("div",{style:{gridColumn:"span 2"}},h("label",null,"Customer"),h("input",{value:form.customer,placeholder:"Customer name",onChange:e=>setForm({...form,customer:e.target.value})})),
+              h("div",null,h("label",null,"Hardware Value (RM)"),h("input",{type:"number",step:"0.01",min:"0",value:form.hardwareValue,placeholder:"0.00",onChange:e=>setForm({...form,hardwareValue:e.target.value})})),
+              h("div",null,h("label",null,"Software Value (RM)"),h("input",{type:"number",step:"0.01",min:"0",value:form.softwareValue,placeholder:"0.00",onChange:e=>setForm({...form,softwareValue:e.target.value})})),
+              h("div",null,h("label",null,"Total Value"),h("input",{disabled:true,value:fmt(num(form.hardwareValue)+num(form.softwareValue))})),
+              h("div",null,h("label",null,"Software Case (Qty)"),h("input",{type:"number",step:"1",min:"0",value:form.softwareCase,placeholder:"0",onChange:e=>setForm({...form,softwareCase:e.target.value})})),
+              h("div",null,h("label",null,"New Subscription (count)"),h("input",{type:"number",step:"1",min:"0",value:form.newSub,onChange:e=>setForm({...form,newSub:e.target.value})})),
+              h("div",null,h("label",null,"Renewal (count)"),h("input",{type:"number",step:"1",min:"0",value:form.renewal,onChange:e=>setForm({...form,renewal:e.target.value})})),
+              h("div",null,h("label",null,"Branch"),h("select",{value:form.branch,onChange:e=>setForm({...form,branch:e.target.value})},BRANCHES.map(b=>h("option",{key:b,value:b},b)))),
+              h("div",null,h("label",null,"Sales Person"),
+                h("select",{value:form.salesPerson,disabled:!isAdmin,onChange:e=>setForm({...form,salesPerson:e.target.value})},
+                  h("option",{value:""},"Select..."),
+                  salesPeople.map(s=>h("option",{key:s,value:s},s)))
+              ),
+              h("div",null,h("label",null,"Status"),h("select",{value:form.status,onChange:e=>setForm({...form,status:e.target.value})},h("option",{value:"Paid"},"Paid"),h("option",{value:"Deposit"},"Deposit"))),
+              h("div",{style:{gridColumn:"1 / -1"}},h("label",null,"Remark (Products Purchased)"),h("textarea",{value:form.remark,placeholder:"Describe products purchased...",onChange:e=>setForm({...form,remark:e.target.value})}))
+            ),
+            h("div",{style:{display:"flex",gap:8,marginTop:"1rem"}},
+              h("button",{type:"submit",className:"primary",disabled:saving},editingId?"Save changes":"Add Invoice"),
+              editingId&&h("button",{type:"button",onClick:resetForm},"Cancel")
+            )
+          )
+        ),
+
+        h("div",{className:"filter-row"},
+          h("div",null,h("label",null,"Filter by Month"),h("input",{type:"month",value:filterMonth,onChange:e=>setFilterMonth(e.target.value)})),
+          isAdmin&&h("div",null,h("label",null,"Filter by Sales Person"),
+            h("select",{value:filterPerson,onChange:e=>setFilterPerson(e.target.value)},
+              h("option",{value:""},"All"),
+              salesPeople.map(s=>h("option",{key:s,value:s},s)))
+          ),
+          (filterMonth||filterPerson)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setFilterMonth("");setFilterPerson("");}},"Clear"))
+        ),
+
+        h("div",{className:"grid",style:{gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",marginBottom:"1.25rem"}},
+          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Total Value"),h("div",{className:"svalue"},fmt(totals.total))),
+          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Software Value"),h("div",{className:"svalue"},fmt(totals.software))),
+          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Hardware Value"),h("div",{className:"svalue"},fmt(totals.hardware))),
+          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Cases / Records"),h("div",{className:"svalue"},totals.cases+" / "+filteredInvoices.length))
+        ),
+
+        h("div",{className:"card",style:{padding:0,overflow:"hidden"}},
+          h("div",{className:"ovx"},
+            h("table",null,
+              h("thead",null,h("tr",null,
+                ["No","Date","Invoice No","Customer","HW Value","SW Value","Total","Case","New Sub","Renewal","Branch","Person","Status","Remark",""]
+                .map(col=>h("th",{key:col},col))
+              )),
+              h("tbody",null,
+                filteredInvoices.length===0
+                  ?h("tr",null,h("td",{colSpan:15,className:"empty"},"No invoices yet. Add one above."))
+                  :filteredInvoices.slice().sort((a,b)=>a.date<b.date?1:-1).map((inv,idx)=>
+                    h("tr",{key:inv.id},
+                      h("td",null,idx+1),
+                      h("td",{style:{whiteSpace:"nowrap"}},inv.date),
+                      h("td",{style:{whiteSpace:"nowrap"}},inv.invoiceNo),
+                      h("td",null,inv.customer),
+                      h("td",{style:{whiteSpace:"nowrap"}},fmt(inv.hardwareValue)),
+                      h("td",{style:{whiteSpace:"nowrap"}},fmt(inv.softwareValue)),
+                      h("td",{style:{whiteSpace:"nowrap",fontWeight:600}},fmt(num(inv.hardwareValue)+num(inv.softwareValue))),
+                      h("td",null,inv.softwareCase),
+                      h("td",null,inv.newSub),
+                      h("td",null,inv.renewal),
+                      h("td",null,h("span",{className:"pill pill-gray"},inv.branch)),
+                      h("td",{style:{whiteSpace:"nowrap"}},inv.salesPerson),
+                      h("td",null,h("span",{className:"badge "+(inv.status==="Paid"?"badge-green":"badge-yellow")},inv.status)),
+                      h("td",{style:{maxWidth:200,color:"var(--text-2)"}},inv.remark),
+                      h("td",{style:{whiteSpace:"nowrap"}},
+                        h("button",{className:"icon edit-btn",disabled:saving,onClick:()=>{setForm({...inv});setEditingId(inv.id);window.scrollTo({top:0,behavior:"smooth"});}},"\u270F"),
+                        h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>deleteInvoice(inv.id)},"\u2715")
+                      )
+                    )
+                  )
+              )
+            )
+          )
+        )
+      ),
+
+      /* ── COMMISSION ── */
+      tab==="commission"&&h("div",null,
+        h("div",{className:"filter-row"},
+          h("div",null,h("label",null,"Month"),h("input",{type:"month",value:reportMonth,onChange:e=>setReportMonth(e.target.value)})),
+          isAdmin&&h("div",null,h("label",null,"Sales Person"),
+            h("select",{value:reportPerson,onChange:e=>setReportPerson(e.target.value)},
+              h("option",{value:""},"All"),
+              salesPeople.map(s=>h("option",{key:s,value:s},s)))
+          ),
+          (reportMonth||reportPerson)&&isAdmin&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setReportMonth("");setReportPerson("");}},"Clear"))
+        ),
+        reportData.length===0
+          ?h("div",{className:"card"},h("p",{className:"empty"},"No data for the selected period."))
+          :reportData.map(r=>h("div",{key:r.name,className:"commission-card"},
+            h("div",{className:"chead"},h("h3",null,r.name),h("span",{style:{fontSize:12,color:"var(--primary)"}},r.count+" invoice(s)")),
+            h("div",{className:"commission-row"},
+              h("div",{className:"rlabel"},
+                h("div",null,"New subscription software value"),
+                r.nTier
+                  ?h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Tier "+(NEWSUB_TIERS.indexOf(r.nTier)+1)+" ("+r.nTier.label+") — unlocks renewal at "+pctStr(r.rRateTier?r.rRateTier.pct:RENEWAL_BASE_PCT))
+                  :h("div",{style:{fontSize:11,color:"var(--warn)"}},r.newSubSw>0?"Below RM 2,256 — no new sub commission; renewal at base 3%":"No new sub value — renewal at base 3%")
+              ),
+              h("span",{className:"rval"},fmt(r.newSubSw)),
+              h("span",{className:"rpct"},pctStr(r.nPct)),
+              h("span",{className:"rcomm"+(r.nComm===0?" zero":"")},fmt(r.nComm))
+            ),
+            h("div",{className:"commission-row"},
+              h("div",{className:"rlabel"},
+                h("div",null,"Renewal software value"),
+                h("div",{style:{fontSize:11,color:r.rRateTier?"var(--text-3)":"var(--warn)"}},
+                  r.rRateTier?"Rate unlocked: "+r.rRateTier.label+" \u2192 "+pctStr(r.rPct):"Base rate (3%) \u2014 new sub below RM 8,000")
+              ),
+              h("span",{className:"rval"},fmt(r.renewalSw)),
+              h("span",{className:"rpct"},pctStr(r.rPct)),
+              h("span",{className:"rcomm"+(r.rComm===0?" zero":"")},fmt(r.rComm))
+            ),
+            h("div",{className:"commission-total"},h("span",null,"Total Commission"),h("span",null,fmt(r.totalCommission)))
+          )),
+        isAdmin&&reportData.length>1&&h("div",{className:"total-payout"},
+          h("span",null,"Total payout \u2014 all sales persons"),
+          h("span",null,fmt(reportData.reduce((s,r)=>s+r.totalCommission,0)))
+        )
+      ),
+
+      /* ── TIER RATES ── */
+      tab==="tiers"&&h("div",{className:"grid g3"},
+        h("div",{className:"card"},
+          h("h3",{style:{marginBottom:"1rem"}},"New Subscription Commission"),
+          h("p",{style:{fontSize:12,color:"var(--text-2)",marginBottom:"0.75rem"}},"Based on salesperson's total new sub SW value for the month. Minimum RM 2,256 to qualify."),
+          h("table",null,
+            h("thead",null,h("tr",null,h("th",null,"Tier"),h("th",null,"Monthly New Sub SW Value"),h("th",null,"Rate"))),
+            h("tbody",null,
+              h("tr",null,h("td",null,"1"),h("td",null,"RM 2,256 – RM 11,280"),h("td",null,h("strong",null,"8%"))),
+              h("tr",null,h("td",null,"2"),h("td",null,"RM 11,281 – RM 20,304"),h("td",null,h("strong",null,"12%"))),
+              h("tr",null,h("td",null,"3"),h("td",null,"> RM 20,304"),h("td",null,h("strong",null,"18%")))
+            )
+          ),
+          h("p",{className:"tier-note"},"Below RM 2,256: no new subscription commission paid.")
+        ),
+        h("div",{className:"card"},
+          h("h3",{style:{marginBottom:"1rem"}},"Renewal Commission Rate"),
+          h("p",{style:{fontSize:12,color:"var(--text-2)",marginBottom:"0.75rem"}},"Renewal rate is unlocked by new subscription value achieved in the same month."),
+          h("table",null,
+            h("thead",null,h("tr",null,h("th",null,"New Sub Value Achieved"),h("th",null,"Renewal Rate"))),
+            h("tbody",null,
+              h("tr",null,h("td",null,"Below RM 8,000 (base)"),h("td",null,h("strong",null,"3%"))),
+              h("tr",null,h("td",null,"> RM 8,000"),h("td",null,h("strong",null,"6%"))),
+              h("tr",null,h("td",null,"> RM 14,000"),h("td",null,h("strong",null,"9%"))),
+              h("tr",null,h("td",null,"> RM 20,000"),h("td",null,h("strong",null,"12%")))
+            )
+          ),
+          h("p",{className:"tier-note"},"No minimum renewal value required.")
+        ),
+        h("div",{className:"card",style:{gridColumn:"1/-1"}},
+          h("h3",{style:{marginBottom:"8px"}},"How Commission is Calculated"),
+          h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.8}},
+            h("strong",null,"New Subscription: "),
+            "Total new sub SW value for the month is matched to the tier table. If it reaches RM 2,256, the applicable rate is applied to the full new sub total.",h("br"),
+            h("strong",null,"Renewal: "),
+            "Rate depends on how much new subscription value is achieved that month. New sub > RM 20,000 \u2192 12%; > RM 14,000 \u2192 9%; > RM 8,000 \u2192 6%; otherwise base 3%.",h("br"),
+            h("strong",null,"Per invoice: "),
+            "If New Subscription count > 0, full software value counts as new sub. If Renewal count > 0, full software value counts as renewal. A single invoice should not have both."
+          )
+        )
+      ),
+
+      /* ── SETTINGS ── */
+      tab==="settings"&&isAdmin&&h("div",{className:"grid g3"},
+        h("div",{className:"card"},
+          h("h3",{style:{marginBottom:"1rem"}},"Sales Persons"),
+          h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
+            salesPeople.map(s=>h("li",{key:s,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
+              h("span",{style:{fontSize:13}},s),
+              h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>removeSalesPerson(s)},"\u2715")
+            ))
+          ),
+          h("div",{style:{display:"flex",gap:8}},
+            h("input",{placeholder:"New sales person name",value:newSalesName,onChange:e=>setNewSalesName(e.target.value)}),
+            h("button",{className:"primary",disabled:saving,onClick:addSalesPerson},"Add")
+          )
+        ),
+        h("div",{className:"card"},
+          h("h3",{style:{marginBottom:"1rem"}},"User Accounts"),
+          h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
+            users.map(u=>h("li",{key:u.username||u.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
+              h("div",null,
+                h("span",{style:{fontSize:13,fontWeight:500}},u.username),
+                h("span",{style:{fontSize:12,color:"var(--text-3)",marginLeft:6}},"("+u.role+") "+u.name)
+              ),
+              u.username!=="admin"&&h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>removeUser(u.username)},"\u2715")
+            ))
+          ),
+          h("p",{style:{fontSize:12,color:"var(--text-2)",marginBottom:8}},"Add new sales person account:"),
+          h("div",{style:{display:"grid",gap:8}},
+            h("input",{placeholder:"Username",value:newUserForm.username,onChange:e=>setNewUserForm({...newUserForm,username:e.target.value})}),
+            h("input",{placeholder:"Password",value:newUserForm.password,onChange:e=>setNewUserForm({...newUserForm,password:e.target.value})}),
+            h("input",{placeholder:"Display name (must match sales person list)",value:newUserForm.name,onChange:e=>setNewUserForm({...newUserForm,name:e.target.value})}),
+            h("button",{className:"primary",disabled:saving,onClick:addUser},"Add User")
+          )
+        )
+      )
+    )
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
