@@ -501,12 +501,8 @@ function App() {
     }).sort((a,b)=>a.name.localeCompare(b.name));
   }, [invoices, currentUser, reportMonth, reportPerson, isAdmin, isManager, myTeamMembers]);
 
-  // ── Manager override commission ─────────────────────────────────────────────
-  const managerOverride = useMemo(()=>{
-    if (!isManager || !myTeam) return null;
-    let pool = invoices.filter(i=>myTeamMembers.includes(i.salesPerson));
-    if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
-    // Compute each team member's commission
+  // ── Helper: compute commission for a set of invoices grouped by person ──────
+  function calcTeamCommission(pool) {
     const byPerson = {};
     pool.forEach(i=>{
       const sp = i.salesPerson||"Unassigned";
@@ -515,15 +511,44 @@ function App() {
       if (num(i.newSub)>0) byPerson[sp].newSubSw += sw;
       else if (num(i.renewal)>0) byPerson[sp].renewalSw += sw;
     });
-    let teamTotalCommission = 0;
+    let total = 0;
     Object.values(byPerson).forEach(d=>{
-      const nPct = getTier(d.newSubSw,NEWSUB_TIERS)?.pct||0;
-      const rPct = getRenewalRate(d.newSubSw)?.pct||RENEWAL_BASE_PCT;
-      teamTotalCommission += d.newSubSw*nPct + d.renewalSw*rPct;
+      const nPct = (getTier(d.newSubSw,NEWSUB_TIERS)||{pct:0}).pct;
+      const rPct = (getRenewalRate(d.newSubSw)||{pct:RENEWAL_BASE_PCT}).pct;
+      total += d.newSubSw*nPct + d.renewalSw*rPct;
     });
+    return total;
+  }
+
+  // ── Manager override commission ─────────────────────────────────────────────
+  // For logged-in manager: their own team override based on reportMonth filter
+  const managerOverride = useMemo(()=>{
+    if (!isManager || !myTeam) return null;
+    let pool = invoices.filter(i=>myTeamMembers.includes(i.salesPerson));
+    if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
+    const teamTotalCommission = calcTeamCommission(pool);
     const pct = num(myTeam.overridePct)/100;
-    return { teamTotalCommission, overridePct:pct, overrideAmt:teamTotalCommission*pct };
+    return { teamName:myTeam.name, teamTotalCommission, overridePct:pct, overrideAmt:teamTotalCommission*pct };
   },[isManager, myTeam, myTeamMembers, invoices, reportMonth]);
+
+  // ── All teams' override commissions (used in admin Commission tab) ───────────
+  const allTeamOverrides = useMemo(()=>{
+    if (!isAdmin || teams.length===0) return [];
+    return teams.map(t=>{
+      let pool = invoices.filter(i=>(t.members||[]).includes(i.salesPerson));
+      if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
+      const teamTotalCommission = calcTeamCommission(pool);
+      const pct = num(t.overridePct)/100;
+      return {
+        teamName: t.name,
+        managerName: t.managerName,
+        teamTotalCommission,
+        overridePct: pct,
+        overrideAmt: teamTotalCommission*pct,
+        memberCount: (t.members||[]).length,
+      };
+    }).filter(t=>t.teamTotalCommission>0 || t.memberCount>0);
+  },[isAdmin, teams, invoices, reportMonth]);
 
   // ── Team CRUD (admin only) ───────────────────────────────────────────────────
   function resetTeamForm() {
@@ -801,13 +826,43 @@ function App() {
             ),
             h("div",{className:"commission-total"},h("span",null,"Total Commission"),h("span",null,fmt(r.totalCommission)))
           )),
-        isAdmin&&reportData.length>1&&h("div",{className:"total-payout"},
+        isAdmin&&reportData.length>1&&h("div",{className:"total-payout",style:{marginBottom:16}},
           h("span",null,"Total payout \u2014 all sales persons"),
           h("span",null,fmt(reportData.reduce((s,r)=>s+r.totalCommission,0)))
         ),
+
+        isAdmin&&allTeamOverrides.length>0&&h("div",null,
+          h("div",{style:{display:"flex",alignItems:"center",gap:8,margin:"8px 0 10px",fontSize:13,fontWeight:600,color:"var(--text-2)"}},
+            h("span",null,"\uD83C\uDFC5 Manager Override Commissions")
+          ),
+          allTeamOverrides.map(t=>h("div",{key:t.teamName,className:"commission-card",style:{marginBottom:8}},
+            h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
+              h("h3",{style:{color:"var(--success)"}},t.teamName),
+              h("span",{style:{fontSize:12,color:"var(--success)"}},"Manager: "+t.managerName+" \u2022 Override: "+pctStr(t.overridePct))
+            ),
+            h("div",{className:"commission-row"},
+              h("div",{className:"rlabel"},
+                h("div",null,"Team total commission"),
+                h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Sum of team members' commission this period")
+              ),
+              h("span",{className:"rval"},fmt(t.teamTotalCommission)),
+              h("span",{className:"rpct"},pctStr(t.overridePct)),
+              h("span",{className:"rcomm"},fmt(t.overrideAmt))
+            ),
+            h("div",{className:"commission-total",style:{background:"#f0fdf4"}},
+              h("span",null,t.managerName+"'s override commission"),
+              h("span",{style:{color:"var(--success)"}},fmt(t.overrideAmt))
+            )
+          )),
+          allTeamOverrides.length>1&&h("div",{className:"total-payout",style:{background:"var(--success)",marginTop:4}},
+            h("span",null,"Total manager override payout"),
+            h("span",null,fmt(allTeamOverrides.reduce((s,t)=>s+t.overrideAmt,0)))
+          )
+        ),
+
         isManager&&managerOverride&&h("div",{className:"commission-card",style:{marginTop:8}},
           h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
-            h("h3",{style:{color:"var(--success)"}},"\uD83C\uDFC5 Manager Override Commission"),
+            h("h3",{style:{color:"var(--success)"}},"\uD83C\uDFC5 Your Override Commission \u2014 "+managerOverride.teamName),
             h("span",{style:{fontSize:12,color:"var(--success)"}},"Your override on team payout")
           ),
           h("div",{className:"commission-row"},
