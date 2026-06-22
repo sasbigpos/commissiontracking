@@ -88,6 +88,23 @@
   .pill { display:inline-block; border-radius:999px; padding:1px 10px; font-size:11px; font-weight:600; }
   .pill-gray { background:var(--bg); color:var(--text-2); border:1px solid var(--border); }
   .tier-note { font-size:12px; color:var(--text-2); margin-top:10px; }
+  .tier-note-ok { color:var(--success); }
+  .tier-card-head { display:flex; align-items:flex-start; gap:12px; margin-bottom:1rem; }
+  .tier-icon { width:38px; height:38px; min-width:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .tier-icon-blue { background:var(--primary-light); }
+  .tier-icon-green { background:#dcfce7; }
+  .tier-table thead th { background:transparent; border-bottom:1px solid var(--border); }
+  .tier-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:var(--bg); font-weight:600; font-size:12px; color:var(--text-2); }
+  .rate-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-weight:700; font-size:13px; }
+  .rate-blue-1 { background:#dbeafe; color:#1d4ed8; }
+  .rate-blue-2 { background:#bfdbfe; color:#1e40af; }
+  .rate-blue-3 { background:#93c5fd; color:#1e3a8a; }
+  .rate-green-1 { background:#dcfce7; color:#15803d; }
+  .rate-green-2 { background:#bbf7d0; color:#166534; }
+  .rate-green-3 { background:#86efac; color:#14532d; }
+  .rate-gray { background:var(--bg); color:var(--text-2); border:1px solid var(--border); }
+  .calc-block { background:#fff; border:1px solid #c7d9fd; border-radius:8px; padding:12px 14px; }
+  .calc-label { font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px; }
   .loading-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--text-2); font-size:14px; }
   .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
@@ -644,42 +661,58 @@ function App() {
 
       /* ── TIER RATES ── */
       tab==="tiers"&&h("div",{className:"grid g3"},
-        h("div",{className:"card"},
-          h("h3",{style:{marginBottom:"1rem"}},"New Subscription Commission"),
-          h("p",{style:{fontSize:12,color:"var(--text-2)",marginBottom:"0.75rem"}},"Based on salesperson's total new sub SW value for the month. Minimum RM 2,256 to qualify."),
-          h("table",null,
-            h("thead",null,h("tr",null,h("th",null,"Tier"),h("th",null,"Monthly New Sub SW Value"),h("th",null,"Rate"))),
-            h("tbody",null,
-              h("tr",null,h("td",null,"1"),h("td",null,"RM 2,256 – RM 11,280"),h("td",null,h("strong",null,"8%"))),
-              h("tr",null,h("td",null,"2"),h("td",null,"RM 11,281 – RM 20,304"),h("td",null,h("strong",null,"12%"))),
-              h("tr",null,h("td",null,"3"),h("td",null,"> RM 20,304"),h("td",null,h("strong",null,"18%")))
+        h("div",{className:"card tier-card"},
+          h("div",{className:"tier-card-head"},
+            h("div",{className:"tier-icon tier-icon-blue"},"\uD83D\uDCC8"),
+            h("div",null,
+              h("h3",{style:{marginBottom:2}},"New Subscription Commission"),
+              h("p",{style:{fontSize:12,color:"var(--text-2)"}},"Based on own monthly new sub SW value")
             )
           ),
-          h("p",{className:"tier-note"},"Below RM 2,256: no new subscription commission paid.")
-        ),
-        h("div",{className:"card"},
-          h("h3",{style:{marginBottom:"1rem"}},"Renewal Commission Rate"),
-          h("p",{style:{fontSize:12,color:"var(--text-2)",marginBottom:"0.75rem"}},"Renewal rate is unlocked by new subscription value achieved in the same month."),
-          h("table",null,
-            h("thead",null,h("tr",null,h("th",null,"New Sub Value Achieved"),h("th",null,"Renewal Rate"))),
+          h("table",{className:"tier-table"},
+            h("thead",null,h("tr",null,h("th",null,"Tier"),h("th",null,"Monthly New Sub SW Value"),h("th",{style:{textAlign:"right"}},"Rate"))),
             h("tbody",null,
-              h("tr",null,h("td",null,"Below RM 8,000 (base)"),h("td",null,h("strong",null,"3%"))),
-              h("tr",null,h("td",null,"> RM 8,000"),h("td",null,h("strong",null,"6%"))),
-              h("tr",null,h("td",null,"> RM 14,000"),h("td",null,h("strong",null,"9%"))),
-              h("tr",null,h("td",null,"> RM 20,000"),h("td",null,h("strong",null,"12%")))
+              h("tr",null,h("td",null,h("span",{className:"tier-num"},"1")),h("td",null,"RM 2,256 – RM 11,280"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-blue-1"},"8%"))),
+              h("tr",null,h("td",null,h("span",{className:"tier-num"},"2")),h("td",null,"RM 11,281 – RM 20,304"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-blue-2"},"12%"))),
+              h("tr",null,h("td",null,h("span",{className:"tier-num"},"3")),h("td",null,"> RM 20,304"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-blue-3"},"18%")))
             )
           ),
-          h("p",{className:"tier-note"},"No minimum renewal value required.")
+          h("p",{className:"tier-note"},"\u26A0\uFE0F Below RM 2,256: no new subscription commission paid.")
         ),
-        h("div",{className:"card",style:{gridColumn:"1/-1"}},
-          h("h3",{style:{marginBottom:"8px"}},"How Commission is Calculated"),
-          h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.8}},
-            h("strong",null,"New Subscription: "),
-            "Total new sub SW value for the month is matched to the tier table. If it reaches RM 2,256, the applicable rate is applied to the full new sub total.",h("br"),
-            h("strong",null,"Renewal: "),
-            "Rate depends on how much new subscription value is achieved that month. New sub > RM 20,000 \u2192 12%; > RM 14,000 \u2192 9%; > RM 8,000 \u2192 6%; otherwise base 3%.",h("br"),
-            h("strong",null,"Per invoice: "),
-            "If New Subscription count > 0, full software value counts as new sub. If Renewal count > 0, full software value counts as renewal. A single invoice should not have both."
+        h("div",{className:"card tier-card"},
+          h("div",{className:"tier-card-head"},
+            h("div",{className:"tier-icon tier-icon-green"},"\uD83D\uDD04"),
+            h("div",null,
+              h("h3",{style:{marginBottom:2}},"Renewal Commission Rate"),
+              h("p",{style:{fontSize:12,color:"var(--text-2)"}},"Unlocked by new subscription value achieved")
+            )
+          ),
+          h("table",{className:"tier-table"},
+            h("thead",null,h("tr",null,h("th",null,"New Sub Value Achieved"),h("th",{style:{textAlign:"right"}},"Renewal Rate"))),
+            h("tbody",null,
+              h("tr",null,h("td",null,"Below RM 8,000 ",h("span",{style:{color:"var(--text-3)"}},"(base)")),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-gray"},"3%"))),
+              h("tr",null,h("td",null,"> RM 8,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-green-1"},"6%"))),
+              h("tr",null,h("td",null,"> RM 14,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-green-2"},"9%"))),
+              h("tr",null,h("td",null,"> RM 20,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-green-3"},"12%")))
+            )
+          ),
+          h("p",{className:"tier-note tier-note-ok"},"\u2713 No minimum renewal value required.")
+        ),
+        h("div",{className:"card",style:{gridColumn:"1/-1",background:"var(--primary-light)",border:"1px solid #c7d9fd"}},
+          h("h3",{style:{marginBottom:"10px",display:"flex",alignItems:"center",gap:8}},h("span",null,"\uD83D\uDCA1"),"How Commission is Calculated"),
+          h("div",{className:"grid",style:{gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:"14px"}},
+            h("div",{className:"calc-block"},
+              h("div",{className:"calc-label"},"New Subscription"),
+              h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.6}},"Total new sub SW value for the month is matched to the tier table. If it reaches RM 2,256, the rate applies to the full new sub total.")
+            ),
+            h("div",{className:"calc-block"},
+              h("div",{className:"calc-label"},"Renewal"),
+              h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.6}},"Rate depends on how much new subscription value is achieved that month: > RM 20,000 \u2192 12%; > RM 14,000 \u2192 9%; > RM 8,000 \u2192 6%; otherwise base 3%.")
+            ),
+            h("div",{className:"calc-block"},
+              h("div",{className:"calc-label"},"Per Invoice"),
+              h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.6}},"If New Subscription count > 0, full software value counts as new sub. If Renewal count > 0, full software value counts as renewal. A single invoice should not have both.")
+            )
           )
         )
       ),
