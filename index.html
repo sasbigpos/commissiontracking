@@ -264,6 +264,7 @@ function App() {
   const [teamForm,     setTeamForm]     = useState({name:"",managerName:"",overridePct:"5",members:[]});
   const [editingTeamId,setEditingTeamId]= useState(null);
   const [teamMemberInput,setTeamMemberInput]= useState("");
+  const [showTeamForm,  setShowTeamForm]  = useState(false);
 
   // ── Init Firebase & load data ───────────────────────────────────────────────
   useEffect(()=>{
@@ -529,6 +530,7 @@ function App() {
     setTeamForm({name:"",managerName:"",overridePct:"5",members:[]});
     setEditingTeamId(null);
     setTeamMemberInput("");
+    setShowTeamForm(false);
   }
   async function saveTeam() {
     if (!teamForm.name.trim()||!teamForm.managerName) { alert("Team name and manager are required."); return; }
@@ -549,6 +551,7 @@ function App() {
         }
       }
       resetTeamForm();
+      setShowTeamForm(false);
     } catch(e) { alert("Failed to save team: "+e.message); }
     setSaving(false);
   }
@@ -576,6 +579,7 @@ function App() {
   function startEditTeam(t) {
     setTeamForm({name:t.name,managerName:t.managerName,overridePct:String(t.overridePct||5),members:t.members||[]});
     setEditingTeamId(t.id);
+    setShowTeamForm(true);
   }
   function addTeamMember() {
     const m = teamMemberInput.trim();
@@ -921,10 +925,11 @@ function App() {
         h("div",{className:"card",style:{gridColumn:"1 / -1"}},
           h("div",{className:"team-head"},
             h("h3",{style:{margin:0}},"\uD83D\uDC65 Teams & Manager Override Commission"),
-            h("button",{className:"primary",onClick:()=>{resetTeamForm();}},editingTeamId?"Cancel edit":"+ New Team")
+            !showTeamForm&&h("button",{className:"primary",onClick:()=>{resetTeamForm();setShowTeamForm(true);}},"+ New Team"),
+            showTeamForm&&h("button",{onClick:resetTeamForm},"\u2715 Cancel")
           ),
 
-          (editingTeamId!==null||teamForm.name)&&h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"1rem",marginBottom:"1rem"}},
+          showTeamForm&&h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"1rem",marginBottom:"1rem"}},
             h("h4",{style:{marginBottom:12,fontSize:13}},(editingTeamId?"Edit":"Create")+" Team"),
             h("div",{className:"grid g2",style:{marginBottom:10}},
               h("div",null,
@@ -963,7 +968,7 @@ function App() {
             ),
             h("div",{style:{display:"flex",gap:8,marginTop:8}},
               h("button",{className:"primary",disabled:saving,onClick:saveTeam},saving?"Saving...":editingTeamId?"Save Changes":"Create Team"),
-              editingTeamId&&h("button",{onClick:resetTeamForm},"Cancel")
+              h("button",{onClick:resetTeamForm},"Cancel")
             )
           ),
 
