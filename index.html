@@ -44,7 +44,7 @@
   .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; box-shadow:var(--shadow); }
   .grid { display:grid; gap:12px; }
   .g2 { grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
-  .g3 { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+  .g3 { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   thead th { text-align:left; padding:8px 10px; font-weight:600; font-size:12px; color:var(--text-2); border-bottom:2px solid var(--border); white-space:nowrap; background:var(--bg); }
   tbody td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
@@ -55,6 +55,13 @@
   .badge-yellow { background:#fef9c3; color:#a16207; }
   .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
   .stat-card .slabel { font-size:12px; color:var(--text-2); margin-bottom:4px; }
+  .stat-card .svalue { font-size:20px; font-weight:700; color:var(--text); }
+  .stat-card-blue { border-top:3px solid var(--primary); }
+  .stat-card-blue .slabel { color:var(--primary); font-weight:600; }
+  .svalue-blue { color:var(--primary) !important; }
+  .stat-card-green { border-top:3px solid var(--success); }
+  .stat-card-green .slabel { color:var(--success); font-weight:600; }
+  .svalue-green { color:var(--success) !important; }
   .stat-card .svalue { font-size:22px; font-weight:700; color:var(--text); }
   .tab-bar { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:4px; margin-bottom:1.25rem; flex-wrap:wrap; }
   .tab { padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-2); border:none; background:none; transition:background .12s,color .12s; }
@@ -93,9 +100,12 @@
   .tier-icon { width:38px; height:38px; min-width:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
   .tier-icon-blue { background:var(--primary-light); }
   .tier-icon-green { background:#dcfce7; }
+  .tier-table { table-layout:fixed; width:100%; }
   .tier-table thead th { background:transparent; border-bottom:1px solid var(--border); }
+  .tier-table td, .tier-table th { word-break:break-word; overflow-wrap:break-word; }
+  .tier-table td:last-child, .tier-table th:last-child { width:70px; }
   .tier-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:var(--bg); font-weight:600; font-size:12px; color:var(--text-2); }
-  .rate-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-weight:700; font-size:13px; }
+  .rate-badge { display:inline-block; padding:3px 8px; border-radius:6px; font-weight:700; font-size:12px; white-space:nowrap; }
   .rate-blue-1 { background:#dbeafe; color:#1d4ed8; }
   .rate-blue-2 { background:#bfdbfe; color:#1e40af; }
   .rate-blue-3 { background:#93c5fd; color:#1e3a8a; }
@@ -408,12 +418,19 @@ function App() {
     return true;
   }), [visibleInvoices, filterMonth, filterPerson, isAdmin]);
 
-  const totals = useMemo(()=>filteredInvoices.reduce((acc,i)=>({
-    hardware: acc.hardware+num(i.hardwareValue),
-    software: acc.software+num(i.softwareValue),
-    total:    acc.total+num(i.hardwareValue)+num(i.softwareValue),
-    cases:    acc.cases+num(i.softwareCase),
-  }),{hardware:0,software:0,total:0,cases:0}), [filteredInvoices]);
+  const totals = useMemo(()=>filteredInvoices.reduce((acc,i)=>{
+    const sw = num(i.softwareValue);
+    const isNew = num(i.newSub) > 0;
+    const isRen = num(i.renewal) > 0;
+    return {
+      hardware:  acc.hardware  + num(i.hardwareValue),
+      software:  acc.software  + sw,
+      total:     acc.total     + num(i.hardwareValue) + sw,
+      cases:     acc.cases     + num(i.softwareCase),
+      newSubSw:  acc.newSubSw  + (isNew ? sw : 0),
+      renewalSw: acc.renewalSw + (isRen && !isNew ? sw : 0),
+    };
+  },{hardware:0,software:0,total:0,cases:0,newSubSw:0,renewalSw:0}), [filteredInvoices]);
 
   const reportData = useMemo(()=>{
     if (!currentUser) return [];
@@ -574,6 +591,8 @@ function App() {
           h("div",{className:"stat-card"},h("div",{className:"slabel"},"Total Value"),h("div",{className:"svalue"},fmt(totals.total))),
           h("div",{className:"stat-card"},h("div",{className:"slabel"},"Software Value"),h("div",{className:"svalue"},fmt(totals.software))),
           h("div",{className:"stat-card"},h("div",{className:"slabel"},"Hardware Value"),h("div",{className:"svalue"},fmt(totals.hardware))),
+          h("div",{className:"stat-card stat-card-blue"},h("div",{className:"slabel"},"New Sub SW Value"),h("div",{className:"svalue svalue-blue"},fmt(totals.newSubSw))),
+          h("div",{className:"stat-card stat-card-green"},h("div",{className:"slabel"},"Renewal SW Value"),h("div",{className:"svalue svalue-green"},fmt(totals.renewalSw))),
           h("div",{className:"stat-card"},h("div",{className:"slabel"},"Cases / Records"),h("div",{className:"svalue"},totals.cases+" / "+filteredInvoices.length))
         ),
 
