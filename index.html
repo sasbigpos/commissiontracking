@@ -125,6 +125,15 @@
   .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--success); }
   .sync-dot.saving { background:var(--warn); animation:pulse .8s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .team-card { border-left:4px solid var(--primary); }
+  .team-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:8px; }
+  .team-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; background:var(--primary-light); color:var(--primary); padding:3px 8px; border-radius:999px; }
+  .team-member-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .team-member-row:last-child { border-bottom:none; }
+  .override-row { background:#f0fdf4; border-top:2px solid var(--success); padding:10px 1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .override-label { font-size:13px; color:var(--success); font-weight:600; }
+  .override-amount { font-size:16px; font-weight:700; color:var(--success); }
+  .mgr-badge { font-size:11px; background:#fef9c3; color:#a16207; border:1px solid #fde68a; padding:2px 7px; border-radius:999px; font-weight:600; margin-left:6px; }
   @media(max-width:600px){ .topbar{padding:.75rem 1rem;} .main{padding:1rem;} .tab{padding:6px 10px;font-size:12px;} }
 </style>
 </head>
@@ -249,8 +258,12 @@ function App() {
   const [filterPerson, setFilterPerson] = useState("");
   const [reportMonth,  setReportMonth]  = useState("");
   const [reportPerson, setReportPerson] = useState("");
+  const [teams,        setTeams]        = useState([]);
   const [newSalesName, setNewSalesName] = useState("");
   const [newUserForm,  setNewUserForm]  = useState({username:"",password:"",name:""});
+  const [teamForm,     setTeamForm]     = useState({name:"",managerName:"",overridePct:"5",members:[]});
+  const [editingTeamId,setEditingTeamId]= useState(null);
+  const [teamMemberInput,setTeamMemberInput]= useState("");
 
   // ── Init Firebase & load data ───────────────────────────────────────────────
   useEffect(()=>{
@@ -284,6 +297,12 @@ function App() {
         else await db.collection("settings").doc("salesPeople").set({ list: DEFAULT_SALES });
       } catch(e) {}
 
+      // Load teams
+      try {
+        const teamsSnap = await fsGetAll("teams");
+        setTeams(teamsSnap);
+      } catch(e) {}
+
     } catch(e) {
       setFbError("Failed to load data from Firestore: " + e.message);
     }
@@ -302,7 +321,7 @@ function App() {
       }
       const u = snap.data();
       setCurrentUser(u);
-      if (u.role==="sales") { setForm(f=>({...f,salesPerson:u.name})); setReportPerson(u.name); }
+      if (u.role==="sales"||u.role==="manager") { setForm(f=>({...f,salesPerson:u.name})); setReportPerson(u.name); }
     } catch(e) {
       setLoginError("Login error: "+e.message);
     }
@@ -313,9 +332,23 @@ function App() {
 
   const isAdmin = currentUser && currentUser.role==="admin";
 
+  // Manager: a sales person who is assigned as manager of a team
+  const myTeam = useMemo(()=>{
+    if (!currentUser) return null;
+    return teams.find(t=>t.managerName===currentUser.name) || null;
+  },[teams, currentUser]);
+  const isManager = !!myTeam;
+  // Team member names (for manager's invoice filter & commission view)
+  const myTeamMembers = useMemo(()=>myTeam ? (myTeam.members||[]) : [], [myTeam]);
+  // All names the manager can see invoices for: own + team members
+  const managerScope = useMemo(()=>{
+    if (!isManager || !currentUser) return [];
+    return [currentUser.name, ...myTeamMembers];
+  },[isManager, currentUser, myTeamMembers]);
+
   // ── Invoice CRUD ─────────────────────────────────────────────────────────────
   function resetForm() {
-    setForm({...emptyInvoice(), salesPerson:currentUser&&currentUser.role==="sales"?currentUser.name:""});
+    setForm({...emptyInvoice(), salesPerson:(currentUser&&(currentUser.role==="sales"||currentUser.role==="manager"))?currentUser.name:""});
     setEditingId(null);
   }
 
@@ -409,14 +442,15 @@ function App() {
   const visibleInvoices = useMemo(()=>{
     if (!currentUser) return [];
     if (isAdmin) return invoices;
+    if (isManager) return invoices.filter(i=>managerScope.includes(i.salesPerson));
     return invoices.filter(i=>i.salesPerson===currentUser.name);
-  }, [invoices, currentUser]);
+  }, [invoices, currentUser, isAdmin, isManager, managerScope]);
 
   const filteredInvoices = useMemo(()=>visibleInvoices.filter(i=>{
     if (filterMonth && i.date && i.date.slice(0,7)!==filterMonth) return false;
-    if (isAdmin && filterPerson && i.salesPerson!==filterPerson) return false;
+    if ((isAdmin||isManager) && filterPerson && i.salesPerson!==filterPerson) return false;
     return true;
-  }), [visibleInvoices, filterMonth, filterPerson, isAdmin]);
+  }), [visibleInvoices, filterMonth, filterPerson, isAdmin, isManager]);
 
   const totals = useMemo(()=>filteredInvoices.reduce((acc,i)=>{
     const sw = num(i.softwareValue);
@@ -435,9 +469,15 @@ function App() {
   const reportData = useMemo(()=>{
     if (!currentUser) return [];
     let pool = invoices;
-    if (!isAdmin) pool = pool.filter(i=>i.salesPerson===currentUser.name);
+    if (isAdmin) {
+      if (reportPerson) pool = pool.filter(i=>i.salesPerson===reportPerson);
+    } else if (isManager) {
+      pool = pool.filter(i=>myTeamMembers.includes(i.salesPerson));
+      if (reportPerson) pool = pool.filter(i=>i.salesPerson===reportPerson);
+    } else {
+      pool = pool.filter(i=>i.salesPerson===currentUser.name);
+    }
     if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
-    if (isAdmin&&reportPerson) pool = pool.filter(i=>i.salesPerson===reportPerson);
 
     const byPerson = {};
     pool.forEach(i=>{
@@ -458,7 +498,92 @@ function App() {
       const rComm   = d.renewalSw * rPct;
       return {name,...d,rPct,nPct,rComm,nComm,nTier,rRateTier,totalCommission:rComm+nComm};
     }).sort((a,b)=>a.name.localeCompare(b.name));
-  }, [invoices, currentUser, reportMonth, reportPerson, isAdmin]);
+  }, [invoices, currentUser, reportMonth, reportPerson, isAdmin, isManager, myTeamMembers]);
+
+  // ── Manager override commission ─────────────────────────────────────────────
+  const managerOverride = useMemo(()=>{
+    if (!isManager || !myTeam) return null;
+    let pool = invoices.filter(i=>myTeamMembers.includes(i.salesPerson));
+    if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
+    // Compute each team member's commission
+    const byPerson = {};
+    pool.forEach(i=>{
+      const sp = i.salesPerson||"Unassigned";
+      if (!byPerson[sp]) byPerson[sp]={renewalSw:0,newSubSw:0};
+      const sw = num(i.softwareValue);
+      if (num(i.newSub)>0) byPerson[sp].newSubSw += sw;
+      else if (num(i.renewal)>0) byPerson[sp].renewalSw += sw;
+    });
+    let teamTotalCommission = 0;
+    Object.values(byPerson).forEach(d=>{
+      const nPct = getTier(d.newSubSw,NEWSUB_TIERS)?.pct||0;
+      const rPct = getRenewalRate(d.newSubSw)?.pct||RENEWAL_BASE_PCT;
+      teamTotalCommission += d.newSubSw*nPct + d.renewalSw*rPct;
+    });
+    const pct = num(myTeam.overridePct)/100;
+    return { teamTotalCommission, overridePct:pct, overrideAmt:teamTotalCommission*pct };
+  },[isManager, myTeam, myTeamMembers, invoices, reportMonth]);
+
+  // ── Team CRUD (admin only) ───────────────────────────────────────────────────
+  function resetTeamForm() {
+    setTeamForm({name:"",managerName:"",overridePct:"5",members:[]});
+    setEditingTeamId(null);
+    setTeamMemberInput("");
+  }
+  async function saveTeam() {
+    if (!teamForm.name.trim()||!teamForm.managerName) { alert("Team name and manager are required."); return; }
+    const data = { name:teamForm.name.trim(), managerName:teamForm.managerName, overridePct:num(teamForm.overridePct), members:teamForm.members };
+    setSaving(true);
+    try {
+      if (editingTeamId) {
+        await fsUpdate("teams", editingTeamId, data);
+        setTeams(prev=>prev.map(t=>t.id===editingTeamId?{...data,id:editingTeamId}:t));
+      } else {
+        const id = await fsAdd("teams", data);
+        setTeams(prev=>[...prev,{...data,id}]);
+        // Promote manager user role to "manager"
+        const mgr = users.find(u=>u.name===data.managerName);
+        if (mgr && mgr.role==="sales") {
+          await fsUpdate("users", mgr.username, {role:"manager"});
+          setUsers(prev=>prev.map(u=>u.name===data.managerName?{...u,role:"manager"}:u));
+        }
+      }
+      resetTeamForm();
+    } catch(e) { alert("Failed to save team: "+e.message); }
+    setSaving(false);
+  }
+  async function deleteTeam(id) {
+    if (!confirm("Delete this team?")) return;
+    setSaving(true);
+    try {
+      const team = teams.find(t=>t.id===id);
+      await fsDelete("teams", id);
+      setTeams(prev=>prev.filter(t=>t.id!==id));
+      // Demote manager back to sales if no other teams
+      if (team) {
+        const remaining = teams.filter(t=>t.id!==id&&t.managerName===team.managerName);
+        if (remaining.length===0) {
+          const mgr = users.find(u=>u.name===team.managerName);
+          if (mgr && mgr.role==="manager") {
+            await fsUpdate("users", mgr.username, {role:"sales"});
+            setUsers(prev=>prev.map(u=>u.name===team.managerName?{...u,role:"sales"}:u));
+          }
+        }
+      }
+    } catch(e) { alert("Failed to delete team: "+e.message); }
+    setSaving(false);
+  }
+  function startEditTeam(t) {
+    setTeamForm({name:t.name,managerName:t.managerName,overridePct:String(t.overridePct||5),members:t.members||[]});
+    setEditingTeamId(t.id);
+  }
+  function addTeamMember() {
+    const m = teamMemberInput.trim();
+    if (!m||teamForm.members.includes(m)) return;
+    setTeamForm(f=>({...f,members:[...f.members,m]}));
+    setTeamMemberInput("");
+  }
+  function removeTeamMember(m) { setTeamForm(f=>({...f,members:f.members.filter(x=>x!==m)})); }
 
   // ── Render: not configured ────────────────────────────────────────────────────
   if (!IS_CONFIGURED) return h("div",{style:{maxWidth:680,margin:"2rem auto",padding:"0 1rem"}},
@@ -523,7 +648,7 @@ function App() {
     )
   );
 
-  const tabs=[["invoices","Invoices"],["commission","Commission"],["tiers","Tier Rates"],...(isAdmin?[["settings","Settings"]]:[])];
+  const tabs=[["invoices","Invoices"],["commission","Commission"],["tiers","Tier Rates"],...(isManager?[["myteam","My Team"]]:[]),...(isAdmin?[["settings","Settings"]]:[])];
 
   // ── Render: main app ──────────────────────────────────────────────────────────
   return h("div",null,
@@ -563,9 +688,9 @@ function App() {
               h("div",null,h("label",null,"Renewal (count)"),h("input",{type:"number",step:"1",min:"0",value:form.renewal,onChange:e=>setForm({...form,renewal:e.target.value})})),
               h("div",null,h("label",null,"Branch"),h("select",{value:form.branch,onChange:e=>setForm({...form,branch:e.target.value})},BRANCHES.map(b=>h("option",{key:b,value:b},b)))),
               h("div",null,h("label",null,"Sales Person"),
-                h("select",{value:form.salesPerson,disabled:!isAdmin,onChange:e=>setForm({...form,salesPerson:e.target.value})},
+                h("select",{value:form.salesPerson,disabled:(!isAdmin&&!isManager),onChange:e=>setForm({...form,salesPerson:e.target.value})},
                   h("option",{value:""},"Select..."),
-                  salesPeople.map(s=>h("option",{key:s,value:s},s)))
+                  (isManager?managerScope:salesPeople).map(s=>h("option",{key:s,value:s},s)))
               ),
               h("div",null,h("label",null,"Status"),h("select",{value:form.status,onChange:e=>setForm({...form,status:e.target.value})},h("option",{value:"Paid"},"Paid"),h("option",{value:"Deposit"},"Deposit"))),
               h("div",{style:{gridColumn:"1 / -1"}},h("label",null,"Remark (Products Purchased)"),h("textarea",{value:form.remark,placeholder:"Describe products purchased...",onChange:e=>setForm({...form,remark:e.target.value})}))
@@ -579,10 +704,10 @@ function App() {
 
         h("div",{className:"filter-row"},
           h("div",null,h("label",null,"Filter by Month"),h("input",{type:"month",value:filterMonth,onChange:e=>setFilterMonth(e.target.value)})),
-          isAdmin&&h("div",null,h("label",null,"Filter by Sales Person"),
+          (isAdmin||isManager)&&h("div",null,h("label",null,"Filter by Sales Person"),
             h("select",{value:filterPerson,onChange:e=>setFilterPerson(e.target.value)},
               h("option",{value:""},"All"),
-              salesPeople.map(s=>h("option",{key:s,value:s},s)))
+              (isManager?managerScope:salesPeople).map(s=>h("option",{key:s,value:s},s)))
           ),
           (filterMonth||filterPerson)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setFilterMonth("");setFilterPerson("");}},"Clear"))
         ),
@@ -638,12 +763,12 @@ function App() {
       tab==="commission"&&h("div",null,
         h("div",{className:"filter-row"},
           h("div",null,h("label",null,"Month"),h("input",{type:"month",value:reportMonth,onChange:e=>setReportMonth(e.target.value)})),
-          isAdmin&&h("div",null,h("label",null,"Sales Person"),
+          (isAdmin||isManager)&&h("div",null,h("label",null,"Sales Person"),
             h("select",{value:reportPerson,onChange:e=>setReportPerson(e.target.value)},
               h("option",{value:""},"All"),
-              salesPeople.map(s=>h("option",{key:s,value:s},s)))
+              (isManager?myTeamMembers:salesPeople).map(s=>h("option",{key:s,value:s},s)))
           ),
-          (reportMonth||reportPerson)&&isAdmin&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setReportMonth("");setReportPerson("");}},"Clear"))
+          (reportMonth||reportPerson)&&(isAdmin||isManager)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setReportMonth("");setReportPerson("");}},"Clear"))
         ),
         reportData.length===0
           ?h("div",{className:"card"},h("p",{className:"empty"},"No data for the selected period."))
@@ -675,6 +800,25 @@ function App() {
         isAdmin&&reportData.length>1&&h("div",{className:"total-payout"},
           h("span",null,"Total payout \u2014 all sales persons"),
           h("span",null,fmt(reportData.reduce((s,r)=>s+r.totalCommission,0)))
+        ),
+        isManager&&managerOverride&&h("div",{className:"commission-card",style:{marginTop:8}},
+          h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
+            h("h3",{style:{color:"var(--success)"}},"\uD83C\uDFC5 Manager Override Commission"),
+            h("span",{style:{fontSize:12,color:"var(--success)"}},"Your override on team payout")
+          ),
+          h("div",{className:"commission-row"},
+            h("div",{className:"rlabel"},
+              h("div",null,"Team total commission"),
+              h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Sum of all team members' commission this period")
+            ),
+            h("span",{className:"rval"},fmt(managerOverride.teamTotalCommission)),
+            h("span",{className:"rpct"},pctStr(managerOverride.overridePct)),
+            h("span",{className:"rcomm"},fmt(managerOverride.overrideAmt))
+          ),
+          h("div",{className:"commission-total",style:{background:"#f0fdf4"}},
+            h("span",null,"Your override commission"),
+            h("span",{style:{color:"var(--success)"}},fmt(managerOverride.overrideAmt))
+          )
         )
       ),
 
@@ -737,7 +881,8 @@ function App() {
       ),
 
       /* ── SETTINGS ── */
-      tab==="settings"&&isAdmin&&h("div",{className:"grid g3"},
+      tab==="settings"&&isAdmin&&h("div",{className:"grid",style:{gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16}},
+
         h("div",{className:"card"},
           h("h3",{style:{marginBottom:"1rem"}},"Sales Persons"),
           h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
@@ -751,13 +896,15 @@ function App() {
             h("button",{className:"primary",disabled:saving,onClick:addSalesPerson},"Add")
           )
         ),
+
         h("div",{className:"card"},
           h("h3",{style:{marginBottom:"1rem"}},"User Accounts"),
           h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
             users.map(u=>h("li",{key:u.username||u.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
               h("div",null,
                 h("span",{style:{fontSize:13,fontWeight:500}},u.username),
-                h("span",{style:{fontSize:12,color:"var(--text-3)",marginLeft:6}},"("+u.role+") "+u.name)
+                h("span",{style:{fontSize:12,color:"var(--text-3)",marginLeft:6}},"("+u.role+") "+u.name),
+                u.role==="manager"&&h("span",{className:"mgr-badge"},"Manager")
               ),
               u.username!=="admin"&&h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>removeUser(u.username)},"\u2715")
             ))
@@ -768,6 +915,162 @@ function App() {
             h("input",{placeholder:"Password",value:newUserForm.password,onChange:e=>setNewUserForm({...newUserForm,password:e.target.value})}),
             h("input",{placeholder:"Display name (must match sales person list)",value:newUserForm.name,onChange:e=>setNewUserForm({...newUserForm,name:e.target.value})}),
             h("button",{className:"primary",disabled:saving,onClick:addUser},"Add User")
+          )
+        ),
+
+        h("div",{className:"card",style:{gridColumn:"1 / -1"}},
+          h("div",{className:"team-head"},
+            h("h3",{style:{margin:0}},"\uD83D\uDC65 Teams & Manager Override Commission"),
+            h("button",{className:"primary",onClick:()=>{resetTeamForm();}},editingTeamId?"Cancel edit":"+ New Team")
+          ),
+
+          (editingTeamId!==null||teamForm.name)&&h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"1rem",marginBottom:"1rem"}},
+            h("h4",{style:{marginBottom:12,fontSize:13}},(editingTeamId?"Edit":"Create")+" Team"),
+            h("div",{className:"grid g2",style:{marginBottom:10}},
+              h("div",null,
+                h("label",null,"Team Name"),
+                h("input",{value:teamForm.name,placeholder:"e.g. North Region",onChange:e=>setTeamForm({...teamForm,name:e.target.value})})
+              ),
+              h("div",null,
+                h("label",null,"Manager (Sales Person)"),
+                h("select",{value:teamForm.managerName,onChange:e=>setTeamForm({...teamForm,managerName:e.target.value})},
+                  h("option",{value:""},"Select manager..."),
+                  salesPeople.map(s=>h("option",{key:s,value:s},s))
+                )
+              ),
+              h("div",null,
+                h("label",null,"Override Commission % (of team total payout)"),
+                h("input",{type:"number",min:"0",max:"100",step:"0.5",value:teamForm.overridePct,
+                  onChange:e=>setTeamForm({...teamForm,overridePct:e.target.value})})
+              )
+            ),
+            h("div",null,
+              h("label",null,"Team Members (Sales Persons)"),
+              h("div",{style:{display:"flex",gap:8,marginBottom:8}},
+                h("select",{value:teamMemberInput,onChange:e=>setTeamMemberInput(e.target.value)},
+                  h("option",{value:""},"Add member..."),
+                  salesPeople.filter(s=>s!==teamForm.managerName&&!teamForm.members.includes(s))
+                    .map(s=>h("option",{key:s,value:s},s))
+                ),
+                h("button",{className:"primary",onClick:addTeamMember,disabled:!teamMemberInput},"Add")
+              ),
+              teamForm.members.length>0&&h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}},
+                teamForm.members.map(m=>h("span",{key:m,style:{display:"inline-flex",alignItems:"center",gap:4,background:"var(--primary-light)",color:"var(--primary)",borderRadius:999,padding:"3px 10px",fontSize:12,fontWeight:500}},
+                  m,
+                  h("button",{onClick:()=>removeTeamMember(m),style:{border:"none",background:"none",cursor:"pointer",color:"var(--primary)",padding:"0 2px",fontSize:14,lineHeight:1}},"\u00D7")
+                ))
+              )
+            ),
+            h("div",{style:{display:"flex",gap:8,marginTop:8}},
+              h("button",{className:"primary",disabled:saving,onClick:saveTeam},saving?"Saving...":editingTeamId?"Save Changes":"Create Team"),
+              editingTeamId&&h("button",{onClick:resetTeamForm},"Cancel")
+            )
+          ),
+
+          teams.length===0
+            ?h("p",{style:{color:"var(--text-3)",fontSize:13}},"No teams yet. Create one above.")
+            :h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12}},
+              teams.map(t=>h("div",{key:t.id,className:"card team-card",style:{padding:"1rem"}},
+                h("div",{className:"team-head"},
+                  h("div",null,
+                    h("div",{style:{fontWeight:600,fontSize:14}},t.name),
+                    h("div",{style:{fontSize:12,color:"var(--text-2)",marginTop:2}},
+                      h("span",{className:"team-badge"},"\uD83C\uDFC5 ",t.managerName),
+                      h("span",{style:{marginLeft:8,color:"var(--text-3)"}},"Override: ",h("strong",null,t.overridePct+"%"))
+                    )
+                  ),
+                  h("div",{style:{display:"flex",gap:4}},
+                    h("button",{className:"icon edit-btn",onClick:()=>startEditTeam(t)},"\u270F"),
+                    h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>deleteTeam(t.id)},"\u2715")
+                  )
+                ),
+                h("ul",{style:{listStyle:"none",padding:0,margin:0}},
+                  (t.members||[]).length===0
+                    ?h("li",{style:{fontSize:12,color:"var(--text-3)",padding:"6px 0"}},"No members yet.")
+                    :(t.members||[]).map(m=>h("li",{key:m,className:"team-member-row"},
+                      h("span",null,m),
+                      h("span",{style:{fontSize:11,color:"var(--text-3)"}},"sales")
+                    ))
+                )
+              ))
+            )
+        )
+      ),
+
+      /* ── MY TEAM (manager view) ── */
+      tab==="myteam"&&isManager&&h("div",null,
+        h("div",{className:"card",style:{marginBottom:"1.25rem",borderLeft:"4px solid var(--primary)"}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}},
+            h("h3",{style:{margin:0}},"\uD83D\uDC65 "+myTeam.name),
+            h("span",{className:"team-badge"},"\uD83C\uDFC5 Manager: "+currentUser.name)
+          ),
+          h("div",{style:{fontSize:13,color:"var(--text-2)",marginBottom:4}},
+            h("strong",null,"Override commission: "),myTeam.overridePct+"% of team total commission payout"
+          ),
+          h("div",{style:{fontSize:13,color:"var(--text-2)"}},"Team members: ",
+            (myTeam.members||[]).join(", ")||h("em",null,"None assigned")
+          )
+        ),
+        h("div",{className:"filter-row"},
+          h("div",null,
+            h("label",null,"Filter by Month"),
+            h("input",{type:"month",value:reportMonth,onChange:e=>setReportMonth(e.target.value)})
+          ),
+          h("div",null,
+            h("label",null,"Filter by Member"),
+            h("select",{value:reportPerson,onChange:e=>setReportPerson(e.target.value)},
+              h("option",{value:""},"All members"),
+              myTeamMembers.map(s=>h("option",{key:s,value:s},s))
+            )
+          ),
+          (reportMonth||reportPerson)&&h("div",{style:{alignSelf:"flex-end"}},
+            h("button",{onClick:()=>{setReportMonth("");setReportPerson("");}},"Clear")
+          )
+        ),
+        reportData.length===0
+          ?h("div",{className:"card"},h("p",{className:"empty"},"No data for the selected period."))
+          :reportData.map(r=>h("div",{key:r.name,className:"commission-card"},
+            h("div",{className:"chead"},h("h3",null,r.name),h("span",{style:{fontSize:12,color:"var(--primary)"}},r.count+" invoice(s)")),
+            h("div",{className:"commission-row"},
+              h("div",{className:"rlabel"},
+                h("div",null,"New subscription software value"),
+                r.nTier
+                  ?h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Tier "+(NEWSUB_TIERS.indexOf(r.nTier)+1)+" ("+r.nTier.label+") \u2014 unlocks renewal at "+pctStr(r.rRateTier?r.rRateTier.pct:RENEWAL_BASE_PCT))
+                  :h("div",{style:{fontSize:11,color:"var(--warn)"}},r.newSubSw>0?"Below RM 2,256 \u2014 no new sub commission; renewal at base 3%":"No new sub value \u2014 renewal at base 3%")
+              ),
+              h("span",{className:"rval"},fmt(r.newSubSw)),
+              h("span",{className:"rpct"},pctStr(r.nPct)),
+              h("span",{className:"rcomm"+(r.nComm===0?" zero":"")},fmt(r.nComm))
+            ),
+            h("div",{className:"commission-row"},
+              h("div",{className:"rlabel"},
+                h("div",null,"Renewal software value"),
+                h("div",{style:{fontSize:11,color:r.rRateTier?"var(--text-3)":"var(--warn)"}},
+                  r.rRateTier?"Rate unlocked: "+r.rRateTier.label+" \u2192 "+pctStr(r.rPct):"Base rate (3%) \u2014 new sub below RM 8,000")
+              ),
+              h("span",{className:"rval"},fmt(r.renewalSw)),
+              h("span",{className:"rpct"},pctStr(r.rPct)),
+              h("span",{className:"rcomm"+(r.rComm===0?" zero":"")},fmt(r.rComm))
+            ),
+            h("div",{className:"commission-total"},h("span",null,"Total Commission"),h("span",null,fmt(r.totalCommission)))
+          )),
+        managerOverride&&h("div",{className:"commission-card",style:{marginTop:8}},
+          h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
+            h("h3",{style:{color:"var(--success)"}},"\uD83C\uDFC5 Your Override Commission"),
+            h("span",{style:{fontSize:12,color:"var(--success)"}},myTeam.overridePct+"% of team payout")
+          ),
+          h("div",{className:"commission-row"},
+            h("div",{className:"rlabel"},
+              h("div",null,"Team total commission"),
+              h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Sum of all team members' commission this period")
+            ),
+            h("span",{className:"rval"},fmt(managerOverride.teamTotalCommission)),
+            h("span",{className:"rpct"},pctStr(managerOverride.overridePct)),
+            h("span",{className:"rcomm"},fmt(managerOverride.overrideAmt))
+          ),
+          h("div",{className:"commission-total",style:{background:"#f0fdf4"}},
+            h("span",null,"Your override commission"),
+            h("span",{style:{color:"var(--success)"}},fmt(managerOverride.overrideAmt))
           )
         )
       )
