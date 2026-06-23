@@ -135,34 +135,6 @@
   .override-amount { font-size:16px; font-weight:700; color:var(--success); }
   .mgr-badge { font-size:11px; background:#fef9c3; color:#a16207; border:1px solid #fde68a; padding:2px 7px; border-radius:999px; font-weight:600; margin-left:6px; }
   @media(max-width:600px){ .topbar{padding:.75rem 1rem;} .main{padding:1rem;} .tab{padding:6px 10px;font-size:12px;} }
-  /* Analytics */
-  .analytics-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; margin-bottom:20px; }
-  .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; box-shadow:var(--shadow); }
-  .chart-card h4 { margin:0 0 4px; font-size:14px; font-weight:600; }
-  .chart-card .chart-sub { font-size:12px; color:var(--text-3); margin-bottom:14px; }
-  .chart-wrap { position:relative; height:260px; }
-  .chart-wrap-sm { position:relative; height:220px; }
-  .seg-toggle { display:flex; gap:4px; background:var(--bg); border-radius:6px; padding:3px; margin-bottom:12px; width:fit-content; }
-  .seg-btn { padding:5px 12px; border-radius:4px; font-size:12px; font-weight:500; border:none; cursor:pointer; background:none; color:var(--text-2); transition:background .12s,color .12s; }
-  .seg-btn.active { background:var(--surface); color:var(--primary); box-shadow:0 1px 3px rgba(0,0,0,.1); }
-  .product-table { width:100%; border-collapse:collapse; font-size:12px; }
-  .product-table th { text-align:left; padding:6px 8px; font-weight:600; color:var(--text-2); border-bottom:2px solid var(--border); background:var(--bg); }
-  .product-table td { padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
-  .product-table tr:last-child td { border-bottom:none; }
-  .product-table tr:hover td { background:#f9fafb; }
-  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
-  .kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; text-align:center; }
-  .kpi-card .kpi-val { font-size:26px; font-weight:700; }
-  .kpi-card .kpi-lbl { font-size:11px; color:var(--text-3); margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
-  .kpi-blue { border-top:3px solid var(--primary); } .kpi-blue .kpi-val { color:var(--primary); }
-  .kpi-green { border-top:3px solid var(--success); } .kpi-green .kpi-val { color:var(--success); }
-  .kpi-amber { border-top:3px solid #d97706; } .kpi-amber .kpi-val { color:#d97706; }
-  .kpi-purple { border-top:3px solid #7c3aed; } .kpi-purple .kpi-val { color:#7c3aed; }
-  .bar-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; font-size:12px; }
-  .bar-row .bar-label { min-width:90px; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-2); }
-  .bar-row .bar-track { flex:1; height:14px; background:var(--bg); border-radius:4px; overflow:hidden; }
-  .bar-row .bar-fill { height:100%; border-radius:4px; transition:width .4s; }
-  .bar-row .bar-val { min-width:78px; text-align:right; font-size:11px; color:var(--text-2); }
 </style>
 </head>
 <body>
@@ -264,94 +236,6 @@ const DEFAULT_USERS = [
 ];
 
 // ── App ───────────────────────────────────────────────────────────────────────
-// ── PieChart: pure SVG, no dependencies ──────────────────────────────────────
-const PIE_COLORS = [
-  "#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2",
-  "#65a30d","#ea580c","#4f46e5","#0d9488","#b45309","#6d28d9",
-  "#be123c","#0369a1","#15803d","#c2410c"
-];
-function svgArc(cx, cy, r, startAngle, endAngle) {
-  const s = { x: cx + r * Math.cos(startAngle), y: cy + r * Math.sin(startAngle) };
-  const e = { x: cx + r * Math.cos(endAngle),   y: cy + r * Math.sin(endAngle)   };
-  const large = endAngle - startAngle > Math.PI ? 1 : 0;
-  return "M "+cx+" "+cy+" L "+s.x+" "+s.y+" A "+r+" "+r+" 0 "+large+" 1 "+e.x+" "+e.y+" Z";
-}
-function PieChart({ data, title, subtitle }) {
-  const [tooltip, setTooltip] = React.useState(null);
-  if (!data || data.length === 0) return h("div",{className:"chart-card"},
-    h("h4",null,title), h("div",{className:"chart-sub"},subtitle),
-    h("p",{style:{color:"var(--text-3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"No data for selected period")
-  );
-  const total = data.reduce((s,d)=>s+d.value, 0);
-  if (total === 0) return h("div",{className:"chart-card"},
-    h("h4",null,title), h("div",{className:"chart-sub"},subtitle),
-    h("p",{style:{color:"var(--text-3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"All values are zero")
-  );
-  const cx=130, cy=130, r=110;
-  let angle = -Math.PI/2;
-  const slices = data.map((d,i)=>{
-    const sweep = (d.value/total)*2*Math.PI;
-    const path = svgArc(cx,cy,r,angle,angle+sweep);
-    const midA = angle + sweep/2;
-    const slice = { path, color:PIE_COLORS[i%PIE_COLORS.length], label:d.label, value:d.value, pct:(d.value/total*100).toFixed(1), midA };
-    angle += sweep;
-    return slice;
-  });
-  return h("div",{className:"chart-card"},
-    h("h4",null,title),
-    h("div",{className:"chart-sub"},subtitle),
-    h("div",{style:{display:"flex",flexWrap:"wrap",gap:16,alignItems:"flex-start"}},
-      h("div",{style:{position:"relative",flexShrink:0}},
-        h("svg",{width:260,height:260,viewBox:"0 0 260 260"},
-          slices.map((s,i)=>h("path",{
-            key:i, d:s.path, fill:s.color, stroke:"#fff", strokeWidth:2,
-            style:{cursor:"pointer",opacity:tooltip&&tooltip.i===i?0.8:1},
-            onMouseEnter:()=>setTooltip({i,...s}),
-            onMouseLeave:()=>setTooltip(null)
-          }))
-        ),
-        tooltip&&h("div",{style:{
-          position:"absolute",top:8,left:270,background:"#1f2937",color:"#fff",
-          borderRadius:6,padding:"8px 12px",fontSize:11,pointerEvents:"none",
-          minWidth:140,zIndex:10,boxShadow:"0 2px 8px rgba(0,0,0,.3)"
-        }},
-          h("div",{style:{fontWeight:600,marginBottom:3}},tooltip.label),
-          h("div",null,"RM"+tooltip.value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})),
-          h("div",{style:{color:"#9ca3af"}},tooltip.pct+"%")
-        )
-      ),
-      h("div",{style:{flex:1,minWidth:120,maxHeight:260,overflowY:"auto"}},
-        slices.map((s,i)=>h("div",{key:i,style:{
-          display:"flex",alignItems:"center",gap:6,marginBottom:5,fontSize:11,
-          cursor:"pointer",opacity:tooltip&&tooltip.i===i?0.7:1
-        },
-        onMouseEnter:()=>setTooltip({i,...s}),
-        onMouseLeave:()=>setTooltip(null)},
-          h("div",{style:{width:10,height:10,borderRadius:2,background:s.color,flexShrink:0}}),
-          h("span",{style:{color:"var(--text-2)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},s.label),
-          h("span",{style:{color:"var(--text-3)",flexShrink:0}},s.pct+"%")
-        ))
-      )
-    )
-  );
-}
-
-// ── HBar: horizontal bar chart ────────────────────────────────────────────────
-function HBar({ data, color }) {
-  if (!data||data.length===0) return h("p",{style:{color:"var(--text-3)",fontSize:12}},"No data");
-  const max = Math.max(...data.map(d=>d.value), 1);
-  const COLORS = ["#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#ea580c","#4f46e5"];
-  return h("div",null,
-    data.map((d,i)=>h("div",{key:d.label,className:"bar-row"},
-      h("span",{className:"bar-label",title:d.label},d.label),
-      h("div",{className:"bar-track"},
-        h("div",{className:"bar-fill",style:{width:(d.value/max*100)+"%",background:color||COLORS[i%COLORS.length]}})
-      ),
-      h("span",{className:"bar-val"},"RM"+d.value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}))
-    ))
-  );
-}
-
 function App() {
   const [fbReady,      setFbReady]      = useState(false);
   const [fbError,      setFbError]      = useState("");
@@ -375,7 +259,6 @@ function App() {
   const [reportMonth,  setReportMonth]  = useState("");
   const [reportPerson, setReportPerson] = useState("");
   const [teams,        setTeams]        = useState([]);
-  const [anaMonth,     setAnaMonth]     = useState("");
   const [newSalesName, setNewSalesName] = useState("");
   const [newUserForm,  setNewUserForm]  = useState({username:"",password:"",name:""});
   const [teamForm,     setTeamForm]     = useState({name:"",managerName:"",overridePct:"5",members:[]});
@@ -731,67 +614,6 @@ function App() {
   }
   function removeTeamMember(m) { setTeamForm(f=>({...f,members:f.members.filter(x=>x!==m)})); }
 
-  // ── Analytics computed data ───────────────────────────────────────────────────
-  const anaData = useMemo(()=>{
-    let pool = isAdmin ? invoices
-             : isManager ? invoices.filter(i=>managerScope.includes(i.salesPerson))
-             : invoices.filter(i=>i.salesPerson===currentUser.name);
-    if (anaMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===anaMonth);
-
-    const bySP    = {}, byBranch = {};
-    const swBySP  = {}, swByBranch = {};
-    const newBySP = {}, newByBranch = {};
-    const renBySP = {}, renByBranch = {};
-    const productCount = {};
-    let totalSales=0, totalSW=0, totalHW=0, totalNewSW=0, totalRenSW=0;
-
-    pool.forEach(i=>{
-      const sp = i.salesPerson||"Unknown";
-      const br = i.branch||"Unknown";
-      const hw = num(i.hardwareValue), sw = num(i.softwareValue);
-      const tot = hw+sw;
-      const isNew = num(i.newSub)>0;
-      const isRen = num(i.renewal)>0 && !isNew;
-
-      totalSales+=tot; totalSW+=sw; totalHW+=hw;
-      if (isNew) totalNewSW+=sw;
-      if (isRen) totalRenSW+=sw;
-
-      bySP[sp]=(bySP[sp]||0)+tot;
-      byBranch[br]=(byBranch[br]||0)+tot;
-      swBySP[sp]=(swBySP[sp]||0)+sw;
-      swByBranch[br]=(swByBranch[br]||0)+sw;
-      if (isNew){ newBySP[sp]=(newBySP[sp]||0)+sw; newByBranch[br]=(newByBranch[br]||0)+sw; }
-      if (isRen){ renBySP[sp]=(renBySP[sp]||0)+sw; renByBranch[br]=(renByBranch[br]||0)+sw; }
-
-      // Product analysis from remark
-      if (i.remark&&i.remark.trim()) {
-        const key = i.remark.trim();
-        if (!productCount[key]) productCount[key]={remark:key,count:0,totalValue:0,newSub:0,renewal:0};
-        productCount[key].count++;
-        productCount[key].totalValue+=tot;
-        if (isNew) productCount[key].newSub++;
-        if (isRen) productCount[key].renewal++;
-      }
-    });
-
-    const toArr = obj=>Object.entries(obj).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
-    const products = Object.values(productCount).sort((a,b)=>b.count-a.count);
-
-    return {
-      totalSales,totalSW,totalHW,totalNewSW,totalRenSW,
-      invoiceCount:pool.length,
-      bySP:toArr(bySP), byBranch:toArr(byBranch),
-      swBySP:toArr(swBySP), swByBranch:toArr(swByBranch),
-      newBySP:toArr(newBySP), newByBranch:toArr(newByBranch),
-      renBySP:toArr(renBySP), renByBranch:toArr(renByBranch),
-      products,
-    };
-  },[invoices, anaMonth, currentUser, isAdmin, isManager, managerScope]);
-
-  // ── Analytics segment state (by person vs by branch toggle) ──────────────────
-  const [anaSeg, setAnaSeg] = React.useState("person"); // "person"|"branch"
-
   // ── Render: not configured ────────────────────────────────────────────────────
   if (!IS_CONFIGURED) return h("div",{style:{maxWidth:680,margin:"2rem auto",padding:"0 1rem"}},
     h("div",{className:"config-banner"},
@@ -855,7 +677,7 @@ function App() {
     )
   );
 
-  const tabs=[["invoices","Invoices"],["commission","Commission"],["analytics","Analytics"],["tiers","Tier Rates"],...(isManager?[["myteam","My Team"]]:[]),...(isAdmin?[["settings","Settings"]]:[])];
+  const tabs=[["invoices","Invoices"],["commission","Commission"],["tiers","Tier Rates"],...(isManager?[["myteam","My Team"]]:[]),...(isAdmin?[["settings","Settings"]]:[])];
 
   // ── Render: main app ──────────────────────────────────────────────────────────
   return h("div",null,
@@ -1056,116 +878,6 @@ function App() {
             h("span",null,"Your override commission"),
             h("span",{style:{color:"var(--success)"}},fmt(managerOverride.overrideAmt))
           )
-        )
-      ),
-
-      /* ── ANALYTICS ── */
-      tab==="analytics"&&h("div",null,
-
-        // Filter row
-        h("div",{className:"filter-row",style:{marginBottom:"1.25rem"}},
-          h("div",null,
-            h("label",null,"Filter by Month"),
-            h("input",{type:"month",value:anaMonth,onChange:e=>setAnaMonth(e.target.value)})
-          ),
-          anaMonth&&h("div",{style:{alignSelf:"flex-end"}},
-            h("button",{onClick:()=>setAnaMonth("")},"Clear")
-          )
-        ),
-
-        // KPI cards
-        h("div",{className:"kpi-grid"},
-          h("div",{className:"kpi-card kpi-blue"},h("div",{className:"kpi-val"},fmt(anaData.totalSales)),h("div",{className:"kpi-lbl"},"Total Sales")),
-          h("div",{className:"kpi-card kpi-purple"},h("div",{className:"kpi-val"},fmt(anaData.totalSW)),h("div",{className:"kpi-lbl"},"Software Value")),
-          h("div",{className:"kpi-card kpi-amber"},h("div",{className:"kpi-val"},fmt(anaData.totalHW)),h("div",{className:"kpi-lbl"},"Hardware Value")),
-          h("div",{className:"kpi-card kpi-green"},h("div",{className:"kpi-val"},fmt(anaData.totalNewSW)),h("div",{className:"kpi-lbl"},"New Sub SW")),
-          h("div",{className:"kpi-card",style:{borderTop:"3px solid #db2777"}},h("div",{className:"kpi-val",style:{color:"#db2777"}},fmt(anaData.totalRenSW)),h("div",{className:"kpi-lbl"},"Renewal SW")),
-          h("div",{className:"kpi-card",style:{borderTop:"3px solid #0891b2"}},h("div",{className:"kpi-val",style:{color:"#0891b2",fontSize:26}},anaData.invoiceCount),h("div",{className:"kpi-lbl"},"Invoices"))
-        ),
-
-        // Person / Branch toggle
-        h("div",{className:"seg-toggle",style:{marginBottom:"1.25rem"}},
-          h("button",{className:"seg-btn"+(anaSeg==="person"?" active":""),onClick:()=>setAnaSeg("person")},"By Sales Person"),
-          h("button",{className:"seg-btn"+(anaSeg==="branch"?" active":""),onClick:()=>setAnaSeg("branch")},"By Branch")
-        ),
-
-        // Pie charts row 1 — Total Sales & Software Value
-        h("div",{className:"analytics-grid"},
-          h(PieChart,{
-            title:"Total Sales Value",
-            subtitle:anaSeg==="person"?"Breakdown by sales person":"Breakdown by branch",
-            data:anaSeg==="person"?anaData.bySP:anaData.byBranch
-          }),
-          h(PieChart,{
-            title:"Software Sales Value",
-            subtitle:anaSeg==="person"?"By sales person":"By branch",
-            data:anaSeg==="person"?anaData.swBySP:anaData.swByBranch
-          })
-        ),
-
-        // Pie charts row 2 — New Sub & Renewal
-        h("div",{className:"analytics-grid"},
-          h(PieChart,{
-            title:"New Subscription SW Value",
-            subtitle:anaSeg==="person"?"By sales person":"By branch",
-            data:anaSeg==="person"?anaData.newBySP:anaData.newByBranch
-          }),
-          h(PieChart,{
-            title:"Renewal SW Value",
-            subtitle:anaSeg==="person"?"By sales person":"By branch",
-            data:anaSeg==="person"?anaData.renBySP:anaData.renByBranch
-          })
-        ),
-
-        // Bar charts
-        h("div",{className:"analytics-grid"},
-          h("div",{className:"chart-card"},
-            h("h4",null,"Total Sales — "+(anaSeg==="person"?"By Sales Person":"By Branch")),
-            h("div",{className:"chart-sub"},"Ranked by total invoice value"),
-            h(HBar,{data:anaSeg==="person"?anaData.bySP:anaData.byBranch,color:"#2563eb"})
-          ),
-          h("div",{className:"chart-card"},
-            h("h4",null,"New Sub vs Renewal SW — "+(anaSeg==="person"?"By Person":"By Branch")),
-            h("div",{className:"chart-sub"},"New subscription (blue) vs renewal (green)"),
-            h("div",{style:{marginBottom:8}},
-              h("p",{style:{fontSize:11,fontWeight:600,color:"var(--primary)",marginBottom:4}},"New Subscription"),
-              h(HBar,{data:anaSeg==="person"?anaData.newBySP:anaData.newByBranch,color:"#2563eb"})
-            ),
-            h("div",null,
-              h("p",{style:{fontSize:11,fontWeight:600,color:"var(--success)",marginBottom:4}},"Renewal"),
-              h(HBar,{data:anaSeg==="person"?anaData.renBySP:anaData.renByBranch,color:"#16a34a"})
-            )
-          )
-        ),
-
-        // Products analysis
-        h("div",{className:"card",style:{marginTop:4}},
-          h("h4",{style:{marginBottom:4}},"Products Purchased Analysis"),
-          h("p",{style:{fontSize:12,color:"var(--text-3)",marginBottom:"1rem"}},"Based on invoice remarks. "+anaData.products.length+" unique product entries."),
-          anaData.products.length===0
-            ? h("p",{style:{color:"var(--text-3)",textAlign:"center",padding:"1.5rem"}},"No product data. Fill in invoice remarks to see analysis here.")
-            : h("div",{style:{overflowX:"auto"}},
-                h("table",{className:"product-table"},
-                  h("thead",null,h("tr",null,
-                    h("th",null,"#"),
-                    h("th",null,"Product / Remark"),
-                    h("th",{style:{textAlign:"right"}},"Invoices"),
-                    h("th",{style:{textAlign:"right"}},"New Sub"),
-                    h("th",{style:{textAlign:"right"}},"Renewal"),
-                    h("th",{style:{textAlign:"right"}},"Total Value")
-                  )),
-                  h("tbody",null,
-                    anaData.products.slice(0,50).map((p,i)=>h("tr",{key:i},
-                      h("td",{style:{color:"var(--text-3)",width:30}},i+1),
-                      h("td",null,p.remark),
-                      h("td",{style:{textAlign:"right",fontWeight:600}},p.count),
-                      h("td",{style:{textAlign:"right",color:"var(--primary)"}},(p.newSub||0)>0?p.newSub:h("span",{style:{color:"var(--text-3)"}},"—")),
-                      h("td",{style:{textAlign:"right",color:"var(--success)"}},(p.renewal||0)>0?p.renewal:h("span",{style:{color:"var(--text-3)"}},"—")),
-                      h("td",{style:{textAlign:"right",whiteSpace:"nowrap"}},fmt(p.totalValue))
-                    ))
-                  )
-                )
-              )
         )
       ),
 
