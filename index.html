@@ -13,9 +13,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 
-<!-- Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   :root {
@@ -267,46 +264,75 @@ const DEFAULT_USERS = [
 ];
 
 // ── App ───────────────────────────────────────────────────────────────────────
-// ── PieChart component (uses Chart.js imperatively) ──────────────────────────
-function PieChart({ data, title, subtitle, small }) {
-  const canvasRef = React.useRef(null);
-  const chartRef  = React.useRef(null);
-  const dataKey = JSON.stringify(data);
-  React.useEffect(()=>{
-    if (!canvasRef.current || !data || data.length===0) return;
-    if (chartRef.current) chartRef.current.destroy();
-    const COLORS = [
-      "#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2",
-      "#65a30d","#ea580c","#4f46e5","#0d9488","#b45309","#6d28d9",
-      "#be123c","#0369a1","#15803d","#c2410c"
-    ];
-    chartRef.current = new Chart(canvasRef.current, {
-      type:"pie",
-      data:{
-        labels: data.map(d=>d.label),
-        datasets:[{ data: data.map(d=>d.value),
-          backgroundColor: data.map((_,i)=>COLORS[i%COLORS.length]),
-          borderWidth:2, borderColor:"#fff" }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{
-          legend:{ position:"bottom", labels:{ boxWidth:12, font:{size:11}, padding:10 } },
-          tooltip:{ callbacks:{ label: ctx=>{
-            const total = data.reduce((s,d)=>s+d.value,0);
-            return " "+ctx.label+": RM"+ctx.parsed.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+" ("+(total>0?(ctx.parsed/total*100).toFixed(1):"0")+"%)";
-          }}}
-        }
-      }
-    });
-    return ()=>{ if (chartRef.current){ chartRef.current.destroy(); chartRef.current=null; } };
-  }, [dataKey]);
+// ── PieChart: pure SVG, no dependencies ──────────────────────────────────────
+const PIE_COLORS = [
+  "#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2",
+  "#65a30d","#ea580c","#4f46e5","#0d9488","#b45309","#6d28d9",
+  "#be123c","#0369a1","#15803d","#c2410c"
+];
+function svgArc(cx, cy, r, startAngle, endAngle) {
+  const s = { x: cx + r * Math.cos(startAngle), y: cy + r * Math.sin(startAngle) };
+  const e = { x: cx + r * Math.cos(endAngle),   y: cy + r * Math.sin(endAngle)   };
+  const large = endAngle - startAngle > Math.PI ? 1 : 0;
+  return "M "+cx+" "+cy+" L "+s.x+" "+s.y+" A "+r+" "+r+" 0 "+large+" 1 "+e.x+" "+e.y+" Z";
+}
+function PieChart({ data, title, subtitle }) {
+  const [tooltip, setTooltip] = React.useState(null);
+  if (!data || data.length === 0) return h("div",{className:"chart-card"},
+    h("h4",null,title), h("div",{className:"chart-sub"},subtitle),
+    h("p",{style:{color:"var(--text-3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"No data for selected period")
+  );
+  const total = data.reduce((s,d)=>s+d.value, 0);
+  if (total === 0) return h("div",{className:"chart-card"},
+    h("h4",null,title), h("div",{className:"chart-sub"},subtitle),
+    h("p",{style:{color:"var(--text-3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"All values are zero")
+  );
+  const cx=130, cy=130, r=110;
+  let angle = -Math.PI/2;
+  const slices = data.map((d,i)=>{
+    const sweep = (d.value/total)*2*Math.PI;
+    const path = svgArc(cx,cy,r,angle,angle+sweep);
+    const midA = angle + sweep/2;
+    const slice = { path, color:PIE_COLORS[i%PIE_COLORS.length], label:d.label, value:d.value, pct:(d.value/total*100).toFixed(1), midA };
+    angle += sweep;
+    return slice;
+  });
   return h("div",{className:"chart-card"},
     h("h4",null,title),
     h("div",{className:"chart-sub"},subtitle),
-    data&&data.length>0
-      ? h("div",{className:small?"chart-wrap-sm":"chart-wrap"},h("canvas",{ref:canvasRef}))
-      : h("p",{style:{color:"var(--text-3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"No data for selected period")
+    h("div",{style:{display:"flex",flexWrap:"wrap",gap:16,alignItems:"flex-start"}},
+      h("div",{style:{position:"relative",flexShrink:0}},
+        h("svg",{width:260,height:260,viewBox:"0 0 260 260"},
+          slices.map((s,i)=>h("path",{
+            key:i, d:s.path, fill:s.color, stroke:"#fff", strokeWidth:2,
+            style:{cursor:"pointer",opacity:tooltip&&tooltip.i===i?0.8:1},
+            onMouseEnter:()=>setTooltip({i,...s}),
+            onMouseLeave:()=>setTooltip(null)
+          }))
+        ),
+        tooltip&&h("div",{style:{
+          position:"absolute",top:8,left:270,background:"#1f2937",color:"#fff",
+          borderRadius:6,padding:"8px 12px",fontSize:11,pointerEvents:"none",
+          minWidth:140,zIndex:10,boxShadow:"0 2px 8px rgba(0,0,0,.3)"
+        }},
+          h("div",{style:{fontWeight:600,marginBottom:3}},tooltip.label),
+          h("div",null,"RM"+tooltip.value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})),
+          h("div",{style:{color:"#9ca3af"}},tooltip.pct+"%")
+        )
+      ),
+      h("div",{style:{flex:1,minWidth:120,maxHeight:260,overflowY:"auto"}},
+        slices.map((s,i)=>h("div",{key:i,style:{
+          display:"flex",alignItems:"center",gap:6,marginBottom:5,fontSize:11,
+          cursor:"pointer",opacity:tooltip&&tooltip.i===i?0.7:1
+        },
+        onMouseEnter:()=>setTooltip({i,...s}),
+        onMouseLeave:()=>setTooltip(null)},
+          h("div",{style:{width:10,height:10,borderRadius:2,background:s.color,flexShrink:0}}),
+          h("span",{style:{color:"var(--text-2)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},s.label),
+          h("span",{style:{color:"var(--text-3)",flexShrink:0}},s.pct+"%")
+        ))
+      )
+    )
   );
 }
 
