@@ -1,151 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Sales Commission Tracker</title>
-
-<!-- Firebase v10 (modular via compat shim for CDN) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-<!-- React -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-
 <style>
-  *, *::before, *::after { box-sizing: border-box; }
-  :root {
-    --bg: #f5f6fa; --surface: #ffffff; --border: #e2e5ed;
-    --primary: #2563eb; --primary-light: #eff4ff;
-    --danger: #dc2626; --danger-light: #fef2f2;
-    --warn: #d97706; --warn-light: #fffbeb;
-    --success: #16a34a;
-    --text: #111827; --text-2: #4b5563; --text-3: #9ca3af;
-    --radius: 10px; --shadow: 0 1px 4px rgba(0,0,0,0.07);
-  }
-  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); font-size:14px; }
-  h1,h2,h3,h4 { margin:0 0 .5rem; } p { margin:0; }
-  input,select,textarea { width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; color:var(--text); background:#fff; font-family:inherit; outline:none; transition:border-color .15s; }
-  input:focus,select:focus,textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
-  input:disabled,select:disabled { background:var(--bg); color:var(--text-2); }
-  label { display:block; font-size:12px; font-weight:500; color:var(--text-2); margin-bottom:4px; }
-  textarea { resize:vertical; min-height:60px; }
-  button { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid var(--border); border-radius:6px; background:#fff; color:var(--text); font-size:13px; font-family:inherit; cursor:pointer; transition:background .12s,border-color .12s; }
-  button:hover { background:var(--bg); }
-  button.primary { background:var(--primary); color:#fff; border-color:var(--primary); }
-  button.primary:hover { background:#1d4ed8; }
-  button.icon { padding:5px 8px; }
-  button:disabled { opacity:0.5; cursor:not-allowed; }
-  .edit-btn { color:var(--primary); border-color:transparent; background:none; }
-  .edit-btn:hover { background:var(--primary-light); border-color:#c7d9fd; }
-  .delete-btn { color:var(--danger); border-color:transparent; background:none; }
-  .delete-btn:hover { background:var(--danger-light); border-color:#fca5a5; }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; box-shadow:var(--shadow); }
-  .grid { display:grid; gap:12px; }
-  .g2 { grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
-  .g3 { grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  thead th { text-align:left; padding:8px 10px; font-weight:600; font-size:12px; color:var(--text-2); border-bottom:2px solid var(--border); white-space:nowrap; background:var(--bg); }
-  tbody td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
-  tbody tr:last-child td { border-bottom:none; }
-  tbody tr:hover { background:#f9fafb; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }
-  .badge-green { background:#dcfce7; color:#15803d; }
-  .badge-yellow { background:#fef9c3; color:#a16207; }
-  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; }
-  .stat-card .slabel { font-size:12px; color:var(--text-2); margin-bottom:4px; }
-  .stat-card .svalue { font-size:20px; font-weight:700; color:var(--text); }
-  .stat-card-blue { border-top:3px solid var(--primary); }
-  .stat-card-blue .slabel { color:var(--primary); font-weight:600; }
-  .svalue-blue { color:var(--primary) !important; }
-  .stat-card-green { border-top:3px solid var(--success); }
-  .stat-card-green .slabel { color:var(--success); font-weight:600; }
-  .svalue-green { color:var(--success) !important; }
-  .stat-card .svalue { font-size:22px; font-weight:700; color:var(--text); }
-  .tab-bar { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:4px; margin-bottom:1.25rem; flex-wrap:wrap; }
-  .tab { padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-2); border:none; background:none; transition:background .12s,color .12s; }
-  .tab:hover { background:var(--bg); color:var(--text); }
-  .tab.active { background:var(--primary); color:#fff; }
-  .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:.75rem 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  .topbar h1 { font-size:16px; font-weight:700; }
-  .main { max-width:1500px; margin:0 auto; padding:1.25rem 1.5rem; }
-  .filter-row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:1rem; }
-  .filter-row > div { min-width:140px; }
-  .commission-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; box-shadow:var(--shadow); }
-  .chead { background:var(--primary-light); border-bottom:1px solid #c7d9fd; padding:.85rem 1.25rem; display:flex; justify-content:space-between; align-items:center; }
-  .chead h3 { font-size:15px; color:var(--primary); margin:0; }
-  .commission-row { display:flex; gap:12px; align-items:center; padding:10px 1.25rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .rlabel { flex:1; min-width:200px; color:var(--text-2); font-size:13px; }
-  .rval { font-size:13px; min-width:120px; text-align:right; }
-  .rpct { font-size:12px; min-width:44px; text-align:center; background:var(--bg); border-radius:4px; padding:2px 6px; color:var(--text-2); border:1px solid var(--border); }
-  .rcomm { font-size:14px; font-weight:600; min-width:120px; text-align:right; color:var(--success); }
-  .rcomm.zero { color:var(--text-3); }
-  .commission-total { display:flex; justify-content:space-between; align-items:center; padding:12px 1.25rem; background:var(--bg); border-top:2px solid var(--border); }
-  .commission-total span:last-child { font-size:18px; font-weight:700; color:var(--primary); }
-  .total-payout { display:flex; justify-content:space-between; align-items:center; background:var(--primary); color:#fff; border-radius:var(--radius); padding:1rem 1.25rem; font-weight:600; font-size:15px; margin-top:8px; }
-  .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem; background:var(--bg); }
-  .login-box { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:2rem; width:100%; max-width:380px; box-shadow:0 4px 24px rgba(0,0,0,.08); }
-  .hint-box { font-size:12px; color:var(--text-3); background:var(--bg); border-radius:6px; padding:10px; margin-top:1rem; }
-  .err { color:var(--danger); font-size:12px; margin-top:6px; padding:8px 10px; background:var(--danger-light); border-radius:6px; }
-  .warn-text { color:var(--warn); font-size:12px; margin-top:4px; }
-  .form-group { margin-bottom:12px; }
-  .ovx { overflow-x:auto; }
-  .empty { padding:2rem; text-align:center; color:var(--text-3); }
-  .pill { display:inline-block; border-radius:999px; padding:1px 10px; font-size:11px; font-weight:600; }
-  .pill-gray { background:var(--bg); color:var(--text-2); border:1px solid var(--border); }
-  .tier-note { font-size:12px; color:var(--text-2); margin-top:10px; }
-  .tier-note-ok { color:var(--success); }
-  .tier-card-head { display:flex; align-items:flex-start; gap:12px; margin-bottom:1rem; }
-  .tier-icon { width:38px; height:38px; min-width:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
-  .tier-icon-blue { background:var(--primary-light); }
-  .tier-icon-green { background:#dcfce7; }
-  .tier-table { table-layout:fixed; width:100%; }
-  .tier-table thead th { background:transparent; border-bottom:1px solid var(--border); }
-  .tier-table td, .tier-table th { word-break:break-word; overflow-wrap:break-word; }
-  .tier-table td:last-child, .tier-table th:last-child { width:70px; }
-  .tier-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:var(--bg); font-weight:600; font-size:12px; color:var(--text-2); }
-  .rate-badge { display:inline-block; padding:3px 8px; border-radius:6px; font-weight:700; font-size:12px; white-space:nowrap; }
-  .rate-blue-1 { background:#dbeafe; color:#1d4ed8; }
-  .rate-blue-2 { background:#bfdbfe; color:#1e40af; }
-  .rate-blue-3 { background:#93c5fd; color:#1e3a8a; }
-  .rate-green-1 { background:#dcfce7; color:#15803d; }
-  .rate-green-2 { background:#bbf7d0; color:#166534; }
-  .rate-green-3 { background:#86efac; color:#14532d; }
-  .rate-gray { background:var(--bg); color:var(--text-2); border:1px solid var(--border); }
-  .calc-block { background:#fff; border:1px solid #c7d9fd; border-radius:8px; padding:12px 14px; }
-  .calc-label { font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px; }
-  .loading-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--text-2); font-size:14px; }
-  .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  .config-banner { background:var(--warn-light); border:1px solid #fcd34d; border-radius:var(--radius); padding:1.25rem; margin-bottom:1.25rem; }
-  .config-banner h3 { color:var(--warn); margin-bottom:8px; }
-  .config-banner code { background:#fff; padding:2px 6px; border-radius:4px; font-size:12px; border:1px solid var(--border); }
-  .sync-indicator { font-size:11px; color:var(--text-3); display:flex; align-items:center; gap:4px; }
-  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--success); }
-  .sync-dot.saving { background:var(--warn); animation:pulse .8s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .team-card { border-left:4px solid var(--primary); }
-  .team-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:8px; }
-  .team-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; background:var(--primary-light); color:var(--primary); padding:3px 8px; border-radius:999px; }
-  .team-member-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
-  .team-member-row:last-child { border-bottom:none; }
-  .override-row { background:#f0fdf4; border-top:2px solid var(--success); padding:10px 1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-  .override-label { font-size:13px; color:var(--success); font-weight:600; }
-  .override-amount { font-size:16px; font-weight:700; color:var(--success); }
-  .mgr-badge { font-size:11px; background:#fef9c3; color:#a16207; border:1px solid #fde68a; padding:2px 7px; border-radius:999px; font-weight:600; margin-left:6px; }
-  @media(max-width:600px){ .topbar{padding:.75rem 1rem;} .main{padding:1rem;} .tab{padding:6px 10px;font-size:12px;} }
+*,*::before,*::after{box-sizing:border-box;}
+:root{
+  --bg:#f5f6fa;--surface:#fff;--border:#e2e5ed;
+  --primary:#2563eb;--pl:#eff4ff;
+  --danger:#dc2626;--dl:#fef2f2;
+  --warn:#d97706;--wl:#fffbeb;
+  --success:#16a34a;
+  --text:#111827;--t2:#4b5563;--t3:#9ca3af;
+  --r:10px;--sh:0 1px 4px rgba(0,0,0,.07);
+}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+h1,h2,h3,h4{margin:0 0 .5rem;}p{margin:0;}
+input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:#fff;font-family:inherit;outline:none;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+input:disabled,select:disabled{background:var(--bg);color:var(--t2);}
+label{display:block;font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px;}
+textarea{resize:vertical;min-height:60px;}
+button{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;transition:background .12s,border-color .12s;}
+button:hover{background:var(--bg);}
+button.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+button.primary:hover{background:#1d4ed8;}
+button:disabled{opacity:.5;cursor:not-allowed;}
+button.icon{padding:5px 8px;}
+.eb{color:var(--primary);border-color:transparent;background:none;}.eb:hover{background:var(--pl);border-color:#c7d9fd;}
+.db{color:var(--danger);border-color:transparent;background:none;}.db:hover{background:var(--dl);border-color:#fca5a5;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;box-shadow:var(--sh);}
+.g2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));}
+.g3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;padding:8px 10px;font-weight:600;font-size:12px;color:var(--t2);border-bottom:2px solid var(--border);white-space:nowrap;background:var(--bg);}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:#f9fafb;}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.bg{background:#dcfce7;color:#15803d;}.by{background:#fef9c3;color:#a16207;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;}
+.sc .sl{font-size:12px;color:var(--t2);margin-bottom:4px;}
+.sc .sv{font-size:20px;font-weight:700;color:var(--text);}
+.sc-blue{border-top:3px solid var(--primary);}.sc-blue .sl{color:var(--primary);font-weight:600;}.sv-blue{color:var(--primary)!important;}
+.sc-green{border-top:3px solid var(--success);}.sc-green .sl{color:var(--success);font-weight:600;}.sv-green{color:var(--success)!important;}
+.tab-bar{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.tab{padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--t2);border:none;background:none;transition:background .12s,color .12s;}
+.tab:hover{background:var(--bg);color:var(--text);}
+.tab.active{background:var(--primary);color:#fff;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.topbar h1{font-size:16px;font-weight:700;}
+.main{max-width:1500px;margin:0 auto;padding:1.25rem 1.5rem;}
+.frow{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem;}
+.frow>div{min-width:140px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden;box-shadow:var(--sh);}
+.chead{background:var(--pl);border-bottom:1px solid #c7d9fd;padding:.85rem 1.25rem;display:flex;justify-content:space-between;align-items:center;}
+.chead h3{font-size:15px;color:var(--primary);margin:0;}
+.crow{display:flex;gap:12px;align-items:center;padding:10px 1.25rem;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.rl{flex:1;min-width:200px;color:var(--t2);font-size:13px;}
+.rv{font-size:13px;min-width:120px;text-align:right;}
+.rp{font-size:12px;min-width:44px;text-align:center;background:var(--bg);border-radius:4px;padding:2px 6px;color:var(--t2);border:1px solid var(--border);}
+.rc{font-size:14px;font-weight:600;min-width:120px;text-align:right;color:var(--success);}
+.rc.z{color:var(--t3);}
+.ctot{display:flex;justify-content:space-between;align-items:center;padding:12px 1.25rem;background:var(--bg);border-top:2px solid var(--border);}
+.ctot span:last-child{font-size:18px;font-weight:700;color:var(--primary);}
+.tpay{display:flex;justify-content:space-between;align-items:center;border-radius:var(--r);padding:1rem 1.25rem;font-weight:600;font-size:15px;margin-top:8px;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:var(--bg);}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08);}
+.hint-box{font-size:12px;color:var(--t3);background:var(--bg);border-radius:6px;padding:10px;margin-top:1rem;}
+.err{color:var(--danger);font-size:12px;margin-top:6px;padding:8px 10px;background:var(--dl);border-radius:6px;}
+.pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:11px;font-weight:600;}
+.pill-g{background:var(--bg);color:var(--t2);border:1px solid var(--border);}
+.sdiv{border:none;border-top:2px dashed var(--border);margin:1rem 0;}
+.tnote{font-size:12px;color:var(--t2);margin-top:10px;}
+.tnote-ok{color:var(--success);}
+.tc-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:1rem;}
+.ti{width:38px;height:38px;min-width:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.ti-b{background:var(--pl);}.ti-g{background:#dcfce7;}
+.tt{table-layout:fixed;width:100%;}
+.tt td,.tt th{word-break:break-word;overflow-wrap:break-word;}
+.tt td:last-child,.tt th:last-child{width:70px;}
+.tt thead th{background:transparent;border-bottom:1px solid var(--border);}
+.tn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--bg);font-weight:600;font-size:12px;color:var(--t2);}
+.rb{display:inline-block;padding:3px 8px;border-radius:6px;font-weight:700;font-size:12px;white-space:nowrap;}
+.rb1{background:#dbeafe;color:#1d4ed8;}.rb2{background:#bfdbfe;color:#1e40af;}.rb3{background:#93c5fd;color:#1e3a8a;}
+.rg1{background:#dcfce7;color:#15803d;}.rg2{background:#bbf7d0;color:#166534;}.rg3{background:#86efac;color:#14532d;}
+.rgr{background:var(--bg);color:var(--t2);border:1px solid var(--border);}
+.cb{background:#fff;border:1px solid #c7d9fd;border-radius:8px;padding:12px 14px;}
+.cl{font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+.team-card{border-left:4px solid var(--primary);}
+.team-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:8px;}
+.team-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;background:var(--pl);color:var(--primary);padding:3px 8px;border-radius:999px;}
+.tmr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.tmr:last-child{border-bottom:none;}
+.or{background:#f0fdf4;border-top:2px solid var(--success);padding:10px 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.mgr-b{font-size:11px;background:#fef9c3;color:#a16207;border:1px solid #fde68a;padding:2px 7px;border-radius:999px;font-weight:600;margin-left:6px;}
+.loading{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--t2);font-size:14px;}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.cfg{background:var(--wl);border:1px solid #fcd34d;border-radius:var(--r);padding:1.25rem;margin-bottom:1.25rem;}
+.cfg h3{color:var(--warn);margin-bottom:8px;}
+.sync{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--success);}
+.dot.saving{background:var(--warn);animation:pulse .8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Analytics */
+.agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:20px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;box-shadow:var(--sh);}
+.chart-card h4{margin:0 0 4px;font-size:14px;font-weight:600;}
+.chart-sub{font-size:12px;color:var(--t3);margin-bottom:14px;}
+.seg{display:flex;gap:4px;background:var(--bg);border-radius:6px;padding:3px;margin-bottom:12px;width:fit-content;}
+.seg-b{padding:5px 12px;border-radius:4px;font-size:12px;font-weight:500;border:none;cursor:pointer;background:none;color:var(--t2);}
+.seg-b.on{background:var(--surface);color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.pt{width:100%;border-collapse:collapse;font-size:12px;}
+.pt th{text-align:left;padding:6px 8px;font-weight:600;color:var(--t2);border-bottom:2px solid var(--border);background:var(--bg);}
+.pt td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
+.pt tr:last-child td{border-bottom:none;}
+.pt tr:hover td{background:#f9fafb;}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
+.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;text-align:center;}
+.kc .kv{font-size:22px;font-weight:700;}
+.kc .kl{font-size:11px;color:var(--t3);margin-top:2px;text-transform:uppercase;letter-spacing:.4px;}
+.k1{border-top:3px solid var(--primary);}.k1 .kv{color:var(--primary);}
+.k2{border-top:3px solid var(--success);}.k2 .kv{color:var(--success);}
+.k3{border-top:3px solid #d97706;}.k3 .kv{color:#d97706;}
+.k4{border-top:3px solid #7c3aed;}.k4 .kv{color:#7c3aed;}
+.k5{border-top:3px solid #db2777;}.k5 .kv{color:#db2777;}
+.k6{border-top:3px solid #0891b2;}.k6 .kv{color:#0891b2;}
+.br{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:12px;}
+.br .bl{min-width:90px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t2);}
+.br .bt{flex:1;height:14px;background:var(--bg);border-radius:4px;overflow:hidden;}
+.br .bf{height:100%;border-radius:4px;}
+.br .bv{min-width:78px;text-align:right;font-size:11px;color:var(--t2);}
+@media(max-width:600px){.topbar{padding:.75rem 1rem;}.main{padding:1rem;}.tab{padding:6px 10px;font-size:12px;}}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script>
-// ─────────────────────────────────────────────────────────────────────────────
-// FIREBASE CONFIGURATION
-// Replace the values below with your own Firebase project config.
-// You get these from: Firebase Console → Project Settings → Your Apps → Web App
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Firebase config ───────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyC1IUIIKGr9x5GEh6AuQPrV_4VroE6VbyU",
   authDomain:        "commissiontracking-1ac0a.firebaseapp.com",
@@ -154,983 +152,656 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "306865619840",
   appId:             "1:306865619840:web:0c235bda808782394f7765"
 };
-// ─────────────────────────────────────────────────────────────────────────────
-
 const IS_CONFIGURED = !FIREBASE_CONFIG.apiKey.startsWith("YOUR_");
+const { createElement:h, useState, useEffect, useMemo, useRef } = React;
 
-const { createElement: h, useState, useEffect, useMemo, useCallback } = React;
-
-// ── Commission tier constants ─────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const BRANCHES = ["HQ","SWK","JHR","SBH","KL","PG","PHG"];
 const DEFAULT_SALES = ["Melvilline","Levin","Azfar","Jaery","Zani","Hong","Allan"];
-
 const NEWSUB_TIERS = [
-  { min:2256,     max:11280,    pct:0.08, label:"RM 2,256 – RM 11,280" },
-  { min:11281,    max:20304,    pct:0.12, label:"RM 11,281 – RM 20,304" },
+  { min:2256,     max:11280,    pct:0.08, label:"RM 2,256 - RM 11,280" },
+  { min:11281,    max:20304,    pct:0.12, label:"RM 11,281 - RM 20,304" },
   { min:20304.01, max:Infinity, pct:0.18, label:"> RM 20,304" },
 ];
 const RENEWAL_RATE_TIERS = [
-  { minNewSub:20000.01, pct:0.12, label:"> RM 20,000 new sub achieved" },
-  { minNewSub:14000.01, pct:0.09, label:"> RM 14,000 new sub achieved" },
-  { minNewSub:8000.01,  pct:0.06, label:"> RM 8,000 new sub achieved"  },
+  { minNewSub:20000.01, pct:0.12, label:"> RM 20,000 new sub" },
+  { minNewSub:14000.01, pct:0.09, label:"> RM 14,000 new sub" },
+  { minNewSub:8000.01,  pct:0.06, label:"> RM 8,000 new sub"  },
 ];
 const RENEWAL_BASE_PCT = 0.03;
-
-function getRenewalRate(newSubSw) {
-  for (const t of RENEWAL_RATE_TIERS) if (newSubSw >= t.minNewSub) return t;
-  return null;
-}
-function getTier(v, tiers) {
-  for (const t of tiers) if (v >= t.min && v <= t.max) return t;
-  return null;
-}
-function fmt(n) { return "RM"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function pctStr(n) { return (n*100).toFixed(0)+"%"; }
-function num(v) { return Number(v)||0; }
-
-const emptyInvoice = () => ({
-  date:"", invoiceNo:"", customer:"",
-  hardwareValue:"", softwareValue:"",
-  softwareCase:"", newSub:"0", renewal:"0",
-  branch:BRANCHES[0], salesPerson:"", status:"Paid", remark:""
-});
-
-// ── Firebase / Firestore helpers ──────────────────────────────────────────────
-let db = null;
-
-function initFirebase() {
-  if (!IS_CONFIGURED) return false;
-  try {
-    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.firestore();
-    return true;
-  } catch(e) {
-    console.error("Firebase init error:", e);
-    return false;
-  }
-}
-
-// Collections: "users", "invoices", "settings" (doc: "salesPeople")
-async function fsGetAll(collection) {
-  const snap = await db.collection(collection).get();
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-async function fsSet(collection, id, data) {
-  await db.collection(collection).doc(id).set(data);
-}
-async function fsAdd(collection, data) {
-  const ref = await db.collection(collection).add(data);
-  return ref.id;
-}
-async function fsUpdate(collection, id, data) {
-  await db.collection(collection).doc(id).update(data);
-}
-async function fsDelete(collection, id) {
-  await db.collection(collection).doc(id).delete();
-}
-
-// ── Default users (seeded into Firestore on first run) ───────────────────────
+const PIE_COLORS = ["#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2","#65a30d","#ea580c","#4f46e5","#0d9488","#b45309","#6d28d9","#be123c","#0369a1","#15803d","#c2410c"];
 const DEFAULT_USERS = [
-  { username:"admin",      password:"admin123",      role:"admin", name:"Admin"      },
+  { username:"admin", password:"admin123", role:"admin", name:"Admin" },
   ...DEFAULT_SALES.map(n=>({ username:n.toLowerCase(), password:n.toLowerCase()+"123", role:"sales", name:n }))
 ];
 
-// ── App ───────────────────────────────────────────────────────────────────────
-function App() {
-  const [fbReady,      setFbReady]      = useState(false);
-  const [fbError,      setFbError]      = useState("");
-  const [appLoading,   setAppLoading]   = useState(true);
-  const [saving,       setSaving]       = useState(false);
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getRenewalRate(v){ for(const t of RENEWAL_RATE_TIERS) if(v>=t.minNewSub) return t; return null; }
+function getTier(v,tiers){ for(const t of tiers) if(v>=t.min&&v<=t.max) return t; return null; }
+function fmt(n){ return "RM"+(Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pct(n){ return (n*100).toFixed(0)+"%"; }
+function num(v){ return Number(v)||0; }
+function emptyInv(){ return {date:"",invoiceNo:"",customer:"",hardwareValue:"",softwareValue:"",softwareCase:"",newSub:"0",renewal:"0",branch:BRANCHES[0],salesPerson:"",status:"Paid",remark:""}; }
+function calcTeamComm(pool){
+  const byP={};
+  pool.forEach(i=>{ const sp=i.salesPerson||"?"; if(!byP[sp]) byP[sp]={r:0,n:0};
+    const sw=num(i.softwareValue);
+    if(num(i.newSub)>0) byP[sp].n+=sw; else if(num(i.renewal)>0) byP[sp].r+=sw;
+  });
+  let tot=0;
+  Object.values(byP).forEach(d=>{ const np=(getTier(d.n,NEWSUB_TIERS)||{pct:0}).pct; const rp=(getRenewalRate(d.n)||{pct:RENEWAL_BASE_PCT}).pct; tot+=d.n*np+d.r*rp; });
+  return tot;
+}
 
-  const [users,        setUsers]        = useState([]);
-  const [invoices,     setInvoices]     = useState([]);
-  const [salesPeople,  setSalesPeople]  = useState(DEFAULT_SALES);
+// ── Firestore ─────────────────────────────────────────────────────────────────
+let db=null;
+function initFB(){ try{ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); return true; }catch(e){ return false; } }
+async function fsAll(col){ const s=await db.collection(col).get(); return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function fsSet(col,id,data){ await db.collection(col).doc(id).set(data); }
+async function fsAdd(col,data){ const r=await db.collection(col).add(data); return r.id; }
+async function fsUpd(col,id,data){ await db.collection(col).doc(id).update(data); }
+async function fsDel(col,id){ await db.collection(col).doc(id).delete(); }
 
-  const [currentUser,  setCurrentUser]  = useState(null);
-  const [loginForm,    setLoginForm]    = useState({username:"",password:""});
-  const [loginError,   setLoginError]   = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-
-  const [tab,          setTab]          = useState("invoices");
-  const [form,         setForm]         = useState(emptyInvoice());
-  const [editingId,    setEditingId]    = useState(null);
-  const [filterMonth,  setFilterMonth]  = useState("");
-  const [filterPerson, setFilterPerson] = useState("");
-  const [reportMonth,  setReportMonth]  = useState("");
-  const [reportPerson, setReportPerson] = useState("");
-  const [teams,        setTeams]        = useState([]);
-  const [newSalesName, setNewSalesName] = useState("");
-  const [newUserForm,  setNewUserForm]  = useState({username:"",password:"",name:""});
-  const [teamForm,     setTeamForm]     = useState({name:"",managerName:"",overridePct:"5",members:[]});
-  const [editingTeamId,setEditingTeamId]= useState(null);
-  const [teamMemberInput,setTeamMemberInput]= useState("");
-  const [showTeamForm,  setShowTeamForm]  = useState(false);
-
-  // ── Init Firebase & load data ───────────────────────────────────────────────
-  useEffect(()=>{
-    if (!IS_CONFIGURED) { setAppLoading(false); return; }
-    const ok = initFirebase();
-    if (!ok) { setFbError("Firebase initialisation failed. Check your config."); setAppLoading(false); return; }
-    setFbReady(true);
-    loadAll();
-  }, []);
-
-  async function loadAll() {
-    try {
-      // Load users; seed defaults if empty
-      let usersData = await fsGetAll("users");
-      if (usersData.length === 0) {
-        for (const u of DEFAULT_USERS) {
-          await fsSet("users", u.username, u);
-        }
-        usersData = DEFAULT_USERS.map(u=>({...u, id:u.username}));
-      }
-      setUsers(usersData);
-
-      // Load invoices
-      const invoicesData = await fsGetAll("invoices");
-      setInvoices(invoicesData);
-
-      // Load sales people setting
-      try {
-        const snap = await db.collection("settings").doc("salesPeople").get();
-        if (snap.exists) setSalesPeople(snap.data().list || DEFAULT_SALES);
-        else await db.collection("settings").doc("salesPeople").set({ list: DEFAULT_SALES });
-      } catch(e) {}
-
-      // Load teams
-      try {
-        const teamsSnap = await fsGetAll("teams");
-        setTeams(teamsSnap);
-      } catch(e) {}
-
-    } catch(e) {
-      setFbError("Failed to load data from Firestore: " + e.message);
-    }
-    setAppLoading(false);
-  }
-
-  // ── Auth ────────────────────────────────────────────────────────────────────
-  async function handleLogin(e) {
-    e.preventDefault();
-    setLoginLoading(true); setLoginError("");
-    try {
-      const uname = loginForm.username.trim().toLowerCase();
-      const snap = await db.collection("users").doc(uname).get();
-      if (!snap.exists || snap.data().password !== loginForm.password) {
-        setLoginError("Invalid username or password."); setLoginLoading(false); return;
-      }
-      const u = snap.data();
-      setCurrentUser(u);
-      if (u.role==="sales"||u.role==="manager") { setForm(f=>({...f,salesPerson:u.name})); setReportPerson(u.name); }
-    } catch(e) {
-      setLoginError("Login error: "+e.message);
-    }
-    setLoginLoading(false);
-  }
-
-  function logout() { setCurrentUser(null); setLoginForm({username:"",password:""}); setTab("invoices"); }
-
-  const isAdmin = currentUser && currentUser.role==="admin";
-
-  // Manager: a sales person who is assigned as manager of a team
-  const myTeam = useMemo(()=>{
-    if (!currentUser) return null;
-    return teams.find(t=>t.managerName===currentUser.name) || null;
-  },[teams, currentUser]);
-  const isManager = !!myTeam;
-  // Team member names (for manager's invoice filter & commission view)
-  const myTeamMembers = useMemo(()=>myTeam ? (myTeam.members||[]) : [], [myTeam]);
-  // All names the manager can see invoices for: own + team members
-  const managerScope = useMemo(()=>{
-    if (!isManager || !currentUser) return [];
-    return [currentUser.name, ...myTeamMembers];
-  },[isManager, currentUser, myTeamMembers]);
-
-  // ── Invoice CRUD ─────────────────────────────────────────────────────────────
-  function resetForm() {
-    setForm({...emptyInvoice(), salesPerson:(currentUser&&(currentUser.role==="sales"||currentUser.role==="manager"))?currentUser.name:""});
-    setEditingId(null);
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.date||!form.invoiceNo||!form.customer||!form.salesPerson) {
-      alert("Please fill in Date, Invoice No, Customer and Sales Person."); return;
-    }
-    const cleaned = {
-      ...form,
-      hardwareValue: num(form.hardwareValue),
-      softwareValue: num(form.softwareValue),
-      softwareCase:  num(form.softwareCase),
-      newSub:  num(form.newSub),
-      renewal: num(form.renewal),
-      updatedAt: new Date().toISOString(),
-    };
-    setSaving(true);
-    try {
-      if (editingId) {
-        await fsUpdate("invoices", editingId, cleaned);
-        setInvoices(prev=>prev.map(i=>i.id===editingId?{...cleaned,id:editingId}:i));
-      } else {
-        cleaned.createdAt = new Date().toISOString();
-        const newId = await fsAdd("invoices", cleaned);
-        setInvoices(prev=>[...prev, {...cleaned, id:newId}]);
-      }
-      resetForm();
-    } catch(e) { alert("Save failed: "+e.message); }
-    setSaving(false);
-  }
-
-  async function deleteInvoice(id) {
-    if (!confirm("Delete this invoice record?")) return;
-    setSaving(true);
-    try {
-      await fsDelete("invoices", id);
-      setInvoices(prev=>prev.filter(i=>i.id!==id));
-      if (editingId===id) resetForm();
-    } catch(e) { alert("Delete failed: "+e.message); }
-    setSaving(false);
-  }
-
-  // ── Settings ─────────────────────────────────────────────────────────────────
-  async function saveSalesPeople(next) {
-    setSalesPeople(next);
-    try { await db.collection("settings").doc("salesPeople").set({ list: next }); } catch(e) {}
-  }
-
-  async function addSalesPerson() {
-    const n = newSalesName.trim();
-    if (!n || salesPeople.includes(n)) return;
-    await saveSalesPeople([...salesPeople, n]);
-    setNewSalesName("");
-  }
-
-  async function removeSalesPerson(name) {
-    if (!confirm('Remove "'+name+'" from sales person list?')) return;
-    await saveSalesPeople(salesPeople.filter(s=>s!==name));
-  }
-
-  async function addUser() {
-    if (!newUserForm.username.trim()||!newUserForm.password.trim()||!newUserForm.name.trim()) {
-      alert("Fill in all fields."); return;
-    }
-    const uname = newUserForm.username.trim().toLowerCase();
-    if (users.some(u=>u.username.toLowerCase()===uname)) { alert("Username already exists."); return; }
-    const newUser = { username:uname, password:newUserForm.password.trim(), role:"sales", name:newUserForm.name.trim() };
-    setSaving(true);
-    try {
-      await fsSet("users", uname, newUser);
-      setUsers(prev=>[...prev, {...newUser, id:uname}]);
-      if (!salesPeople.includes(newUser.name)) await saveSalesPeople([...salesPeople, newUser.name]);
-      setNewUserForm({username:"",password:"",name:""});
-    } catch(e) { alert("Failed to add user: "+e.message); }
-    setSaving(false);
-  }
-
-  async function removeUser(username) {
-    if (username==="admin") return;
-    if (!confirm('Remove user "'+username+'"?')) return;
-    setSaving(true);
-    try {
-      await fsDelete("users", username);
-      setUsers(prev=>prev.filter(u=>u.username!==username));
-    } catch(e) { alert("Failed to remove user: "+e.message); }
-    setSaving(false);
-  }
-
-  // ── Derived data ──────────────────────────────────────────────────────────────
-  const visibleInvoices = useMemo(()=>{
-    if (!currentUser) return [];
-    if (isAdmin) return invoices;
-    if (isManager) return invoices.filter(i=>managerScope.includes(i.salesPerson));
-    return invoices.filter(i=>i.salesPerson===currentUser.name);
-  }, [invoices, currentUser, isAdmin, isManager, managerScope]);
-
-  const filteredInvoices = useMemo(()=>visibleInvoices.filter(i=>{
-    if (filterMonth && i.date && i.date.slice(0,7)!==filterMonth) return false;
-    if ((isAdmin||isManager) && filterPerson && i.salesPerson!==filterPerson) return false;
-    return true;
-  }), [visibleInvoices, filterMonth, filterPerson, isAdmin, isManager]);
-
-  const totals = useMemo(()=>filteredInvoices.reduce((acc,i)=>{
-    const sw = num(i.softwareValue);
-    const isNew = num(i.newSub) > 0;
-    const isRen = num(i.renewal) > 0;
-    return {
-      hardware:  acc.hardware  + num(i.hardwareValue),
-      software:  acc.software  + sw,
-      total:     acc.total     + num(i.hardwareValue) + sw,
-      cases:     acc.cases     + num(i.softwareCase),
-      newSubSw:  acc.newSubSw  + (isNew ? sw : 0),
-      renewalSw: acc.renewalSw + (isRen && !isNew ? sw : 0),
-    };
-  },{hardware:0,software:0,total:0,cases:0,newSubSw:0,renewalSw:0}), [filteredInvoices]);
-
-  const reportData = useMemo(()=>{
-    if (!currentUser) return [];
-    let pool = invoices;
-    if (isAdmin) {
-      if (reportPerson) pool = pool.filter(i=>i.salesPerson===reportPerson);
-    } else if (isManager) {
-      pool = pool.filter(i=>myTeamMembers.includes(i.salesPerson));
-      if (reportPerson) pool = pool.filter(i=>i.salesPerson===reportPerson);
-    } else {
-      pool = pool.filter(i=>i.salesPerson===currentUser.name);
-    }
-    if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
-
-    const byPerson = {};
-    pool.forEach(i=>{
-      const sp = i.salesPerson||"Unassigned";
-      if (!byPerson[sp]) byPerson[sp]={renewalSw:0,newSubSw:0,count:0};
-      const sw = num(i.softwareValue);
-      if (num(i.newSub)>0) byPerson[sp].newSubSw += sw;
-      else if (num(i.renewal)>0) byPerson[sp].renewalSw += sw;
-      byPerson[sp].count++;
-    });
-
-    return Object.entries(byPerson).map(([name,d])=>{
-      const nTier   = getTier(d.newSubSw, NEWSUB_TIERS);
-      const nPct    = nTier ? nTier.pct : 0;
-      const nComm   = d.newSubSw * nPct;
-      const rRateTier = getRenewalRate(d.newSubSw);
-      const rPct    = rRateTier ? rRateTier.pct : RENEWAL_BASE_PCT;
-      const rComm   = d.renewalSw * rPct;
-      return {name,...d,rPct,nPct,rComm,nComm,nTier,rRateTier,totalCommission:rComm+nComm};
-    }).sort((a,b)=>a.name.localeCompare(b.name));
-  }, [invoices, currentUser, reportMonth, reportPerson, isAdmin, isManager, myTeamMembers]);
-
-  // ── Helper: compute commission for a set of invoices grouped by person ──────
-  function calcTeamCommission(pool) {
-    const byPerson = {};
-    pool.forEach(i=>{
-      const sp = i.salesPerson||"Unassigned";
-      if (!byPerson[sp]) byPerson[sp]={renewalSw:0,newSubSw:0};
-      const sw = num(i.softwareValue);
-      if (num(i.newSub)>0) byPerson[sp].newSubSw += sw;
-      else if (num(i.renewal)>0) byPerson[sp].renewalSw += sw;
-    });
-    let total = 0;
-    Object.values(byPerson).forEach(d=>{
-      const nPct = (getTier(d.newSubSw,NEWSUB_TIERS)||{pct:0}).pct;
-      const rPct = (getRenewalRate(d.newSubSw)||{pct:RENEWAL_BASE_PCT}).pct;
-      total += d.newSubSw*nPct + d.renewalSw*rPct;
-    });
-    return total;
-  }
-
-  // ── Manager override commission ─────────────────────────────────────────────
-  // For logged-in manager: their own team override based on reportMonth filter
-  const managerOverride = useMemo(()=>{
-    if (!isManager || !myTeam) return null;
-    let pool = invoices.filter(i=>myTeamMembers.includes(i.salesPerson));
-    if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
-    const teamTotalCommission = calcTeamCommission(pool);
-    const pct = num(myTeam.overridePct)/100;
-    return { teamName:myTeam.name, teamTotalCommission, overridePct:pct, overrideAmt:teamTotalCommission*pct };
-  },[isManager, myTeam, myTeamMembers, invoices, reportMonth]);
-
-  // ── All teams' override commissions (used in admin Commission tab) ───────────
-  const allTeamOverrides = useMemo(()=>{
-    if (!isAdmin || teams.length===0) return [];
-    return teams.map(t=>{
-      let pool = invoices.filter(i=>(t.members||[]).includes(i.salesPerson));
-      if (reportMonth) pool = pool.filter(i=>i.date&&i.date.slice(0,7)===reportMonth);
-      const teamTotalCommission = calcTeamCommission(pool);
-      const pct = num(t.overridePct)/100;
-      return {
-        teamName: t.name,
-        managerName: t.managerName,
-        teamTotalCommission,
-        overridePct: pct,
-        overrideAmt: teamTotalCommission*pct,
-        memberCount: (t.members||[]).length,
-      };
-    }).filter(t=>t.teamTotalCommission>0 || t.memberCount>0);
-  },[isAdmin, teams, invoices, reportMonth]);
-
-  // ── Team CRUD (admin only) ───────────────────────────────────────────────────
-  function resetTeamForm() {
-    setTeamForm({name:"",managerName:"",overridePct:"5",members:[]});
-    setEditingTeamId(null);
-    setTeamMemberInput("");
-    setShowTeamForm(false);
-  }
-  async function saveTeam() {
-    if (!teamForm.name.trim()||!teamForm.managerName) { alert("Team name and manager are required."); return; }
-    const data = { name:teamForm.name.trim(), managerName:teamForm.managerName, overridePct:num(teamForm.overridePct), members:teamForm.members };
-    setSaving(true);
-    try {
-      if (editingTeamId) {
-        await fsUpdate("teams", editingTeamId, data);
-        setTeams(prev=>prev.map(t=>t.id===editingTeamId?{...data,id:editingTeamId}:t));
-      } else {
-        const id = await fsAdd("teams", data);
-        setTeams(prev=>[...prev,{...data,id}]);
-        // Promote manager user role to "manager"
-        const mgr = users.find(u=>u.name===data.managerName);
-        if (mgr && mgr.role==="sales") {
-          await fsUpdate("users", mgr.username, {role:"manager"});
-          setUsers(prev=>prev.map(u=>u.name===data.managerName?{...u,role:"manager"}:u));
-        }
-      }
-      resetTeamForm();
-      setShowTeamForm(false);
-    } catch(e) { alert("Failed to save team: "+e.message); }
-    setSaving(false);
-  }
-  async function deleteTeam(id) {
-    if (!confirm("Delete this team?")) return;
-    setSaving(true);
-    try {
-      const team = teams.find(t=>t.id===id);
-      await fsDelete("teams", id);
-      setTeams(prev=>prev.filter(t=>t.id!==id));
-      // Demote manager back to sales if no other teams
-      if (team) {
-        const remaining = teams.filter(t=>t.id!==id&&t.managerName===team.managerName);
-        if (remaining.length===0) {
-          const mgr = users.find(u=>u.name===team.managerName);
-          if (mgr && mgr.role==="manager") {
-            await fsUpdate("users", mgr.username, {role:"sales"});
-            setUsers(prev=>prev.map(u=>u.name===team.managerName?{...u,role:"sales"}:u));
-          }
-        }
-      }
-    } catch(e) { alert("Failed to delete team: "+e.message); }
-    setSaving(false);
-  }
-  function startEditTeam(t) {
-    setTeamForm({name:t.name,managerName:t.managerName,overridePct:String(t.overridePct||5),members:t.members||[]});
-    setEditingTeamId(t.id);
-    setShowTeamForm(true);
-  }
-  function addTeamMember() {
-    const m = teamMemberInput.trim();
-    if (!m||teamForm.members.includes(m)) return;
-    setTeamForm(f=>({...f,members:[...f.members,m]}));
-    setTeamMemberInput("");
-  }
-  function removeTeamMember(m) { setTeamForm(f=>({...f,members:f.members.filter(x=>x!==m)})); }
-
-  // ── Render: not configured ────────────────────────────────────────────────────
-  if (!IS_CONFIGURED) return h("div",{style:{maxWidth:680,margin:"2rem auto",padding:"0 1rem"}},
-    h("div",{className:"config-banner"},
-      h("h3",null,"⚙️ Firebase configuration required"),
-      h("p",{style:{fontSize:13,color:"var(--text-2)",marginBottom:"1rem",lineHeight:1.7}},
-        "Open ",h("code",null,"index.html")," in a text editor and replace the placeholder values in the ",
-        h("code",null,"FIREBASE_CONFIG")," block near the top of the file with your actual Firebase project credentials. ",
-        "See ",h("code",null,"SETUP.md")," for full step-by-step instructions."
-      ),
-      h("pre",{style:{background:"#fff",border:"1px solid var(--border)",borderRadius:6,padding:"1rem",fontSize:12,overflowX:"auto"}},
-`const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSy...",
-  authDomain:        "my-project.firebaseapp.com",
-  projectId:         "my-project",
-  storageBucket:     "my-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId:             "1:123456789:web:abc123"
-};`)
-    )
-  );
-
-  // ── Render: loading ───────────────────────────────────────────────────────────
-  if (appLoading) return h("div",{className:"loading-screen"},
-    h("div",{className:"spinner"}),
-    h("span",null,"Connecting to Firestore...")
-  );
-
-  // ── Render: Firebase error ────────────────────────────────────────────────────
-  if (fbError) return h("div",{style:{maxWidth:560,margin:"2rem auto",padding:"0 1rem"}},
-    h("div",{className:"config-banner"},
-      h("h3",null,"Firebase Error"),
-      h("p",{style:{fontSize:13}},fbError),
-      h("p",{style:{fontSize:12,color:"var(--text-3)",marginTop:8}},"Check your Firebase config and Firestore security rules. See SETUP.md for help.")
-    )
-  );
-
-  // ── Render: login ─────────────────────────────────────────────────────────────
-  if (!currentUser) return h("div",{className:"login-wrap"},
-    h("div",{className:"login-box"},
-      h("h2",null,"Sales Commission Tracker"),
-      h("p",{style:{color:"var(--text-2)",fontSize:13,marginBottom:"1.25rem"}},"Sign in to your account"),
-      h("form",{onSubmit:handleLogin},
-        h("div",{className:"form-group"},
-          h("label",null,"Username"),
-          h("input",{value:loginForm.username,autoFocus:true,disabled:loginLoading,onChange:e=>setLoginForm({...loginForm,username:e.target.value})})
+// ── SVG Pie chart (no external deps) ─────────────────────────────────────────
+function arc(cx,cy,r,a0,a1){
+  const s={x:cx+r*Math.cos(a0),y:cy+r*Math.sin(a0)};
+  const e={x:cx+r*Math.cos(a1),y:cy+r*Math.sin(a1)};
+  return "M "+cx+" "+cy+" L "+s.x+" "+s.y+" A "+r+" "+r+" 0 "+(a1-a0>Math.PI?1:0)+" 1 "+e.x+" "+e.y+" Z";
+}
+function PieChart({data,title,subtitle}){
+  const [tip,setTip]=useState(null);
+  if(!data||data.length===0) return h("div",{className:"chart-card"},h("h4",null,title),h("div",{className:"chart-sub"},subtitle),h("p",{style:{color:"var(--t3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"No data"));
+  const total=data.reduce((s,d)=>s+d.value,0);
+  if(total===0) return h("div",{className:"chart-card"},h("h4",null,title),h("div",{className:"chart-sub"},subtitle),h("p",{style:{color:"var(--t3)",fontSize:12,padding:"2rem 0",textAlign:"center"}},"All values zero"));
+  let a=-Math.PI/2;
+  const slices=data.map((d,i)=>{ const sw=(d.value/total)*2*Math.PI; const s={path:arc(120,120,100,a,a+sw),color:PIE_COLORS[i%PIE_COLORS.length],label:d.label,value:d.value,pct:(d.value/total*100).toFixed(1),i}; a+=sw; return s; });
+  return h("div",{className:"chart-card"},
+    h("h4",null,title),h("div",{className:"chart-sub"},subtitle),
+    h("div",{style:{display:"flex",flexWrap:"wrap",gap:12,alignItems:"flex-start"}},
+      h("div",{style:{position:"relative",flexShrink:0}},
+        h("svg",{width:240,height:240,viewBox:"0 0 240 240"},
+          slices.map(s=>h("path",{key:s.i,d:s.path,fill:s.color,stroke:"#fff",strokeWidth:2,style:{cursor:"pointer",opacity:tip&&tip.i===s.i?.75:1},onMouseEnter:()=>setTip(s),onMouseLeave:()=>setTip(null)}))
         ),
-        h("div",{className:"form-group"},
-          h("label",null,"Password"),
-          h("input",{type:"password",value:loginForm.password,disabled:loginLoading,onChange:e=>setLoginForm({...loginForm,password:e.target.value})})
-        ),
-        loginError&&h("p",{className:"err"},loginError),
-        h("button",{type:"submit",className:"primary",disabled:loginLoading,style:{width:"100%",marginTop:8,padding:"9px"}},
-          loginLoading?"Signing in...":"Sign in")
+        tip&&h("div",{style:{position:"absolute",top:4,left:248,background:"#1f2937",color:"#fff",borderRadius:6,padding:"8px 10px",fontSize:11,pointerEvents:"none",minWidth:130,zIndex:10,boxShadow:"0 2px 8px rgba(0,0,0,.3)"}},
+          h("div",{style:{fontWeight:600,marginBottom:2}},tip.label),
+          h("div",null,fmt(tip.value)),
+          h("div",{style:{color:"#9ca3af"}},tip.pct+"%")
+        )
       ),
-      h("div",{className:"hint-box"},
-        h("strong",null,"Default credentials"),h("br"),
-        "Admin: admin / admin123",h("br"),
-        "Sales: firstname / firstname123",h("br"),
-        h("em",{style:{color:"var(--text-3)"}},"e.g. levin / levin123")
+      h("div",{style:{flex:1,minWidth:100,maxHeight:240,overflowY:"auto"}},
+        slices.map(s=>h("div",{key:s.i,style:{display:"flex",alignItems:"center",gap:6,marginBottom:5,fontSize:11,cursor:"pointer",opacity:tip&&tip.i===s.i?.7:1},onMouseEnter:()=>setTip(s),onMouseLeave:()=>setTip(null)},
+          h("div",{style:{width:10,height:10,borderRadius:2,background:s.color,flexShrink:0}}),
+          h("span",{style:{color:"var(--t2)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},s.label),
+          h("span",{style:{color:"var(--t3)",flexShrink:0}},s.pct+"%")
+        ))
       )
     )
   );
+}
+function HBar({data,color}){
+  if(!data||data.length===0) return h("p",{style:{color:"var(--t3)",fontSize:12}},"No data");
+  const max=Math.max(...data.map(d=>d.value),1);
+  return h("div",null,data.map((d,i)=>h("div",{key:d.label,className:"br"},
+    h("span",{className:"bl",title:d.label},d.label),
+    h("div",{className:"bt"},h("div",{className:"bf",style:{width:(d.value/max*100)+"%",background:color||PIE_COLORS[i%PIE_COLORS.length]}})),
+    h("span",{className:"bv"},fmt(d.value))
+  )));
+}
 
-  const tabs=[["invoices","Invoices"],["commission","Commission"],["tiers","Tier Rates"],...(isManager?[["myteam","My Team"]]:[]),...(isAdmin?[["settings","Settings"]]:[])];
+// ── App ───────────────────────────────────────────────────────────────────────
+function App(){
+  const [fbError,  setFbError]  = useState("");
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [users,    setUsers]    = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [salesPpl, setSalesPpl] = useState(DEFAULT_SALES);
+  const [teams,    setTeams]    = useState([]);
+  const [me,       setMe]       = useState(null);
+  const [loginF,   setLoginF]   = useState({u:"",p:""});
+  const [loginErr, setLoginErr] = useState("");
+  const [loginBusy,setLoginBusy]= useState(false);
+  const [tab,      setTab]      = useState("invoices");
+  const [form,     setForm]     = useState(emptyInv());
+  const [editId,   setEditId]   = useState(null);
+  const [fMonth,   setFMonth]   = useState("");
+  const [fPerson,  setFPerson]  = useState("");
+  const [rMonth,   setRMonth]   = useState("");
+  const [rPerson,  setRPerson]  = useState("");
+  const [aMonth,   setAMonth]   = useState("");
+  const [aSeg,     setASeg]     = useState("person");
+  const [newSales, setNewSales] = useState("");
+  const [newUF,    setNewUF]    = useState({u:"",p:"",n:""});
+  const [teamF,    setTeamF]    = useState({name:"",mgr:"",pct:"5",members:[]});
+  const [editTeam, setEditTeam] = useState(null);
+  const [showTF,   setShowTF]   = useState(false);
+  const [tmInp,    setTmInp]    = useState("");
 
-  // ── Render: main app ──────────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────────
+  useEffect(()=>{
+    if(!IS_CONFIGURED){ setLoading(false); return; }
+    if(!initFB()){ setFbError("Firebase init failed. Check config."); setLoading(false); return; }
+    (async()=>{
+      try{
+        let u=await fsAll("users");
+        if(u.length===0){ for(const x of DEFAULT_USERS) await fsSet("users",x.username,x); u=DEFAULT_USERS.map(x=>({...x,id:x.username})); }
+        setUsers(u);
+        setInvoices(await fsAll("invoices"));
+        setTeams(await fsAll("teams"));
+        try{ const s=await db.collection("settings").doc("salesPeople").get(); if(s.exists) setSalesPpl(s.data().list||DEFAULT_SALES); else await db.collection("settings").doc("salesPeople").set({list:DEFAULT_SALES}); }catch(e){}
+      }catch(e){ setFbError("Firestore error: "+e.message); }
+      setLoading(false);
+    })();
+  },[]);
+
+  const isAdmin   = me&&me.role==="admin";
+  const isManager = me&&me.role==="manager";
+  const myTeam    = useMemo(()=>teams.find(t=>t.managerName===me?.name)||null,[teams,me]);
+  const myMembers = useMemo(()=>myTeam?(myTeam.members||[]):[],[myTeam]);
+  const myScope   = useMemo(()=>isManager&&me?[me.name,...myMembers]:[],[isManager,me,myMembers]);
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  async function login(e){
+    e.preventDefault(); setLoginBusy(true); setLoginErr("");
+    try{
+      const s=await db.collection("users").doc(loginF.u.trim().toLowerCase()).get();
+      if(!s.exists||s.data().password!==loginF.p){ setLoginErr("Invalid username or password."); setLoginBusy(false); return; }
+      const u=s.data(); setMe(u);
+      if(u.role!=="admin"){ setForm(f=>({...f,salesPerson:u.name})); setRPerson(u.name); }
+    }catch(e){ setLoginErr("Login error: "+e.message); }
+    setLoginBusy(false);
+  }
+  function logout(){ setMe(null); setLoginF({u:"",p:""}); setTab("invoices"); }
+
+  // ── Derived invoice lists ─────────────────────────────────────────────────
+  const visible=useMemo(()=>{
+    if(!me) return [];
+    if(isAdmin) return invoices;
+    if(isManager) return invoices.filter(i=>myScope.includes(i.salesPerson));
+    return invoices.filter(i=>i.salesPerson===me.name);
+  },[invoices,me,isAdmin,isManager,myScope]);
+
+  const filtered=useMemo(()=>visible.filter(i=>{
+    if(fMonth&&i.date&&i.date.slice(0,7)!==fMonth) return false;
+    if((isAdmin||isManager)&&fPerson&&i.salesPerson!==fPerson) return false;
+    return true;
+  }),[visible,fMonth,fPerson,isAdmin,isManager]);
+
+  const totals=useMemo(()=>filtered.reduce((a,i)=>{
+    const sw=num(i.softwareValue),hw=num(i.hardwareValue);
+    const isN=num(i.newSub)>0, isR=num(i.renewal)>0&&!isN;
+    return{hw:a.hw+hw,sw:a.sw+sw,tot:a.tot+hw+sw,cases:a.cases+num(i.softwareCase),nSw:a.nSw+(isN?sw:0),rSw:a.rSw+(isR?sw:0)};
+  },{hw:0,sw:0,tot:0,cases:0,nSw:0,rSw:0}),[filtered]);
+
+  // ── Commission report data ────────────────────────────────────────────────
+  const repData=useMemo(()=>{
+    if(!me) return [];
+    let pool=invoices;
+    if(isAdmin){ if(rPerson) pool=pool.filter(i=>i.salesPerson===rPerson); }
+    else if(isManager){ pool=pool.filter(i=>myMembers.includes(i.salesPerson)); if(rPerson) pool=pool.filter(i=>i.salesPerson===rPerson); }
+    else pool=pool.filter(i=>i.salesPerson===me.name);
+    if(rMonth) pool=pool.filter(i=>i.date&&i.date.slice(0,7)===rMonth);
+    const byP={};
+    pool.forEach(i=>{ const sp=i.salesPerson||"?"; if(!byP[sp]) byP[sp]={rSw:0,nSw:0,cnt:0};
+      const sw=num(i.softwareValue);
+      if(num(i.newSub)>0) byP[sp].nSw+=sw; else if(num(i.renewal)>0) byP[sp].rSw+=sw;
+      byP[sp].cnt++;
+    });
+    return Object.entries(byP).map(([name,d])=>{
+      const nt=getTier(d.nSw,NEWSUB_TIERS),np=nt?nt.pct:0,nc=d.nSw*np;
+      const rrt=getRenewalRate(d.nSw),rp=rrt?rrt.pct:RENEWAL_BASE_PCT,rc=d.rSw*rp;
+      return{name,...d,nt,np,nc,rrt,rp,rc,total:nc+rc};
+    }).sort((a,b)=>a.name.localeCompare(b.name));
+  },[invoices,me,isAdmin,isManager,myMembers,rMonth,rPerson]);
+
+  const mgrOverride=useMemo(()=>{
+    if(!isManager||!myTeam) return null;
+    let pool=invoices.filter(i=>myMembers.includes(i.salesPerson));
+    if(rMonth) pool=pool.filter(i=>i.date&&i.date.slice(0,7)===rMonth);
+    const tc=calcTeamComm(pool),p=num(myTeam.overridePct)/100;
+    return{teamName:myTeam.name,tc,p,amt:tc*p};
+  },[isManager,myTeam,myMembers,invoices,rMonth]);
+
+  const allOverrides=useMemo(()=>{
+    if(!isAdmin||teams.length===0) return [];
+    return teams.map(t=>{
+      let pool=invoices.filter(i=>(t.members||[]).includes(i.salesPerson));
+      if(rMonth) pool=pool.filter(i=>i.date&&i.date.slice(0,7)===rMonth);
+      const tc=calcTeamComm(pool),p=num(t.overridePct)/100;
+      return{teamName:t.name,mgr:t.managerName,tc,p,amt:tc*p,mc:(t.members||[]).length};
+    });
+  },[isAdmin,teams,invoices,rMonth]);
+
+  // ── Invoice CRUD ──────────────────────────────────────────────────────────
+  function resetForm(){ setForm({...emptyInv(),salesPerson:(me&&me.role!=="admin")?me.name:""}); setEditId(null); }
+  async function saveInv(e){
+    e.preventDefault();
+    if(!form.date||!form.invoiceNo||!form.customer||!form.salesPerson){ alert("Fill Date, Invoice No, Customer, Sales Person."); return; }
+    const d={...form,hardwareValue:num(form.hardwareValue),softwareValue:num(form.softwareValue),softwareCase:num(form.softwareCase),newSub:num(form.newSub),renewal:num(form.renewal),updatedAt:new Date().toISOString()};
+    setSaving(true);
+    try{
+      if(editId){ await fsUpd("invoices",editId,d); setInvoices(p=>p.map(i=>i.id===editId?{...d,id:editId}:i)); }
+      else{ d.createdAt=new Date().toISOString(); const id=await fsAdd("invoices",d); setInvoices(p=>[...p,{...d,id}]); }
+      resetForm();
+    }catch(err){ alert("Save failed: "+err.message); }
+    setSaving(false);
+  }
+  async function delInv(id){ if(!confirm("Delete this invoice?")) return; setSaving(true); try{ await fsDel("invoices",id); setInvoices(p=>p.filter(i=>i.id!==id)); if(editId===id) resetForm(); }catch(e){ alert("Delete failed: "+e.message); } setSaving(false); }
+
+  // ── Settings helpers ──────────────────────────────────────────────────────
+  async function saveSP(next){ setSalesPpl(next); try{ await db.collection("settings").doc("salesPeople").set({list:next}); }catch(e){} }
+  async function addUser(){
+    if(!newUF.u.trim()||!newUF.p.trim()||!newUF.n.trim()){ alert("Fill all fields."); return; }
+    const un=newUF.u.trim().toLowerCase();
+    if(users.some(u=>u.username.toLowerCase()===un)){ alert("Username exists."); return; }
+    const u={username:un,password:newUF.p.trim(),role:"sales",name:newUF.n.trim()};
+    setSaving(true);
+    try{ await fsSet("users",un,u); setUsers(p=>[...p,{...u,id:un}]); if(!salesPpl.includes(u.name)) await saveSP([...salesPpl,u.name]); setNewUF({u:"",p:"",n:""}); }catch(e){ alert("Failed: "+e.message); }
+    setSaving(false);
+  }
+  async function delUser(un){ if(!confirm("Remove user "+un+"?")) return; setSaving(true); try{ await fsDel("users",un); setUsers(p=>p.filter(u=>u.username!==un)); }catch(e){ alert(e.message); } setSaving(false); }
+
+  function resetTF(){ setTeamF({name:"",mgr:"",pct:"5",members:[]}); setEditTeam(null); setShowTF(false); setTmInp(""); }
+  async function saveTeam(){
+    if(!teamF.name.trim()||!teamF.mgr){ alert("Team name and manager required."); return; }
+    const d={name:teamF.name.trim(),managerName:teamF.mgr,overridePct:num(teamF.pct),members:teamF.members};
+    setSaving(true);
+    try{
+      if(editTeam){ await fsUpd("teams",editTeam,d); setTeams(p=>p.map(t=>t.id===editTeam?{...d,id:editTeam}:t)); }
+      else{
+        const id=await fsAdd("teams",d); setTeams(p=>[...p,{...d,id}]);
+        const mu=users.find(u=>u.name===d.managerName);
+        if(mu&&mu.role==="sales"){ await fsUpd("users",mu.username,{role:"manager"}); setUsers(p=>p.map(u=>u.name===d.managerName?{...u,role:"manager"}:u)); }
+      }
+      resetTF();
+    }catch(e){ alert("Failed: "+e.message); }
+    setSaving(false);
+  }
+  async function delTeam(id){
+    if(!confirm("Delete this team?")) return; setSaving(true);
+    try{
+      const t=teams.find(x=>x.id===id); await fsDel("teams",id); setTeams(p=>p.filter(x=>x.id!==id));
+      if(t&&teams.filter(x=>x.id!==id&&x.managerName===t.managerName).length===0){
+        const mu=users.find(u=>u.name===t.managerName);
+        if(mu&&mu.role==="manager"){ await fsUpd("users",mu.username,{role:"sales"}); setUsers(p=>p.map(u=>u.name===t.managerName?{...u,role:"sales"}:u)); }
+      }
+    }catch(e){ alert(e.message); }
+    setSaving(false);
+  }
+
+  // ── Analytics data ────────────────────────────────────────────────────────
+  const ana=useMemo(()=>{
+    let pool=isAdmin?invoices:isManager?invoices.filter(i=>myScope.includes(i.salesPerson)):invoices.filter(i=>i.salesPerson===me?.name);
+    if(aMonth) pool=pool.filter(i=>i.date&&i.date.slice(0,7)===aMonth);
+    const bySP={},byBr={},swSP={},swBr={},nSP={},nBr={},rSP={},rBr={},prods={};
+    let tS=0,tSW=0,tHW=0,tNSW=0,tRSW=0;
+    pool.forEach(i=>{
+      const sp=i.salesPerson||"?",br=i.branch||"?",hw=num(i.hardwareValue),sw=num(i.softwareValue),tot=hw+sw;
+      const isN=num(i.newSub)>0,isR=num(i.renewal)>0&&!isN;
+      tS+=tot;tSW+=sw;tHW+=hw;if(isN)tNSW+=sw;if(isR)tRSW+=sw;
+      bySP[sp]=(bySP[sp]||0)+tot; byBr[br]=(byBr[br]||0)+tot;
+      swSP[sp]=(swSP[sp]||0)+sw;  swBr[br]=(swBr[br]||0)+sw;
+      if(isN){nSP[sp]=(nSP[sp]||0)+sw;nBr[br]=(nBr[br]||0)+sw;}
+      if(isR){rSP[sp]=(rSP[sp]||0)+sw;rBr[br]=(rBr[br]||0)+sw;}
+      if(i.remark&&i.remark.trim()){
+        const k=i.remark.trim(); if(!prods[k]) prods[k]={label:k,count:0,val:0,ns:0,rn:0};
+        prods[k].count++;prods[k].val+=tot;if(isN)prods[k].ns++;if(isR)prods[k].rn++;
+      }
+    });
+    const arr=o=>Object.entries(o).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
+    return{tS,tSW,tHW,tNSW,tRSW,cnt:pool.length,bySP:arr(bySP),byBr:arr(byBr),swSP:arr(swSP),swBr:arr(swBr),nSP:arr(nSP),nBr:arr(nBr),rSP:arr(rSP),rBr:arr(rBr),prods:Object.values(prods).sort((a,b)=>b.count-a.count)};
+  },[invoices,me,isAdmin,isManager,myScope,aMonth]);
+
+  // ── Render guards ─────────────────────────────────────────────────────────
+  if(!IS_CONFIGURED) return h("div",{style:{maxWidth:640,margin:"2rem auto",padding:"0 1rem"}},h("div",{className:"cfg"},h("h3",null,"Firebase config required"),h("p",{style:{fontSize:13,color:"var(--t2)"}},"Open index.html and fill in FIREBASE_CONFIG with your project values.")));
+  if(loading) return h("div",{className:"loading"},h("div",{className:"spinner"}),h("span",null,"Connecting to Firestore..."));
+  if(fbError) return h("div",{style:{maxWidth:520,margin:"2rem auto",padding:"0 1rem"}},h("div",{className:"cfg"},h("h3",null,"Firebase Error"),h("p",{style:{fontSize:13}},fbError)));
+  if(!me) return h("div",{className:"login-wrap"},h("div",{className:"login-box"},
+    h("h2",null,"Sales Commission Tracker"),
+    h("p",{style:{color:"var(--t2)",fontSize:13,marginBottom:"1.25rem"}},"Sign in to your account"),
+    h("form",{onSubmit:login},
+      h("div",{style:{marginBottom:12}},h("label",null,"Username"),h("input",{value:loginF.u,autoFocus:true,disabled:loginBusy,onChange:e=>setLoginF({...loginF,u:e.target.value})})),
+      h("div",{style:{marginBottom:12}},h("label",null,"Password"),h("input",{type:"password",value:loginF.p,disabled:loginBusy,onChange:e=>setLoginF({...loginF,p:e.target.value})})),
+      loginErr&&h("p",{className:"err"},loginErr),
+      h("button",{type:"submit",className:"primary",disabled:loginBusy,style:{width:"100%",marginTop:8,padding:"9px"}},loginBusy?"Signing in...":"Sign in")
+    ),
+    h("div",{className:"hint-box"},
+      h("strong",null,"Default credentials"),h("br"),
+      "Admin: admin / admin123",h("br"),"Sales: firstname / firstname123",h("br"),
+      h("em",{style:{color:"var(--t3)"}},"e.g. levin / levin123")
+    )
+  ));
+
+  // ── Main app ──────────────────────────────────────────────────────────────
+  const tabs=[["invoices","Invoices"],["commission","Commission"],["analytics","Analytics"],["tiers","Tier Rates"],...(isManager?[["myteam","My Team"]]:[]),...(isAdmin?[["settings","Settings"]]:[])];
+  const spList=isManager?myScope:salesPpl;
+
   return h("div",null,
     h("div",{className:"topbar"},
-      h("div",null,
-        h("h1",null,"Sales Commission Tracker"),
-        h("span",{style:{fontSize:12,color:"var(--text-2)"}},"Signed in as ",h("strong",null,currentUser.name)," · ",currentUser.role)
-      ),
+      h("div",null,h("h1",null,"Sales Commission Tracker"),h("span",{style:{fontSize:12,color:"var(--t2)"}},"Signed in as ",h("strong",null,me.name)," - ",me.role)),
       h("div",{style:{display:"flex",alignItems:"center",gap:12}},
-        h("div",{className:"sync-indicator"},
-          h("div",{className:"sync-dot"+(saving?" saving":"")}),
-          saving?"Saving...":"Synced"
-        ),
+        h("div",{className:"sync"},h("div",{className:"dot"+(saving?" saving":"")}),saving?"Saving...":"Synced"),
         h("button",{onClick:logout},"Sign out")
       )
     ),
-
     h("div",{className:"main"},
-      h("div",{className:"tab-bar"},
-        tabs.map(([key,label])=>h("button",{key,className:"tab"+(tab===key?" active":""),onClick:()=>setTab(key)},label))
-      ),
+      h("div",{className:"tab-bar"},tabs.map(([k,l])=>h("button",{key:k,className:"tab"+(tab===k?" active":""),onClick:()=>setTab(k)},l))),
 
-      /* ── INVOICES ── */
+      // ── INVOICES ───────────────────────────────────────────────────────────
       tab==="invoices"&&h("div",null,
         h("div",{className:"card",style:{marginBottom:"1.25rem"}},
-          h("h3",{style:{marginBottom:"1rem",fontSize:15}},editingId?"Edit Invoice":"Add Invoice"),
-          h("form",{onSubmit:handleSubmit},
-            h("div",{className:"grid g2"},
-              h("div",null,h("label",null,"Payment / Invoice Date"),h("input",{type:"date",value:form.date,onChange:e=>setForm({...form,date:e.target.value})})),
+          h("h3",{style:{marginBottom:"1rem",fontSize:15}},editId?"Edit Invoice":"Add Invoice"),
+          h("form",{onSubmit:saveInv},
+            h("div",{className:"g2"},
+              h("div",null,h("label",null,"Invoice Date"),h("input",{type:"date",value:form.date,onChange:e=>setForm({...form,date:e.target.value})})),
               h("div",null,h("label",null,"Invoice No"),h("input",{value:form.invoiceNo,placeholder:"e.g. PI_23001",onChange:e=>setForm({...form,invoiceNo:e.target.value})})),
               h("div",{style:{gridColumn:"span 2"}},h("label",null,"Customer"),h("input",{value:form.customer,placeholder:"Customer name",onChange:e=>setForm({...form,customer:e.target.value})})),
               h("div",null,h("label",null,"Hardware Value (RM)"),h("input",{type:"number",step:"0.01",min:"0",value:form.hardwareValue,placeholder:"0.00",onChange:e=>setForm({...form,hardwareValue:e.target.value})})),
               h("div",null,h("label",null,"Software Value (RM)"),h("input",{type:"number",step:"0.01",min:"0",value:form.softwareValue,placeholder:"0.00",onChange:e=>setForm({...form,softwareValue:e.target.value})})),
               h("div",null,h("label",null,"Total Value"),h("input",{disabled:true,value:fmt(num(form.hardwareValue)+num(form.softwareValue))})),
               h("div",null,h("label",null,"Software Case (Qty)"),h("input",{type:"number",step:"1",min:"0",value:form.softwareCase,placeholder:"0",onChange:e=>setForm({...form,softwareCase:e.target.value})})),
-              h("div",null,h("label",null,"New Subscription (count)"),h("input",{type:"number",step:"1",min:"0",value:form.newSub,onChange:e=>setForm({...form,newSub:e.target.value})})),
-              h("div",null,h("label",null,"Renewal (count)"),h("input",{type:"number",step:"1",min:"0",value:form.renewal,onChange:e=>setForm({...form,renewal:e.target.value})})),
+              h("div",null,h("label",null,"New Subscription"),h("input",{type:"number",step:"1",min:"0",value:form.newSub,onChange:e=>setForm({...form,newSub:e.target.value})})),
+              h("div",null,h("label",null,"Renewal"),h("input",{type:"number",step:"1",min:"0",value:form.renewal,onChange:e=>setForm({...form,renewal:e.target.value})})),
               h("div",null,h("label",null,"Branch"),h("select",{value:form.branch,onChange:e=>setForm({...form,branch:e.target.value})},BRANCHES.map(b=>h("option",{key:b,value:b},b)))),
-              h("div",null,h("label",null,"Sales Person"),
-                h("select",{value:form.salesPerson,disabled:(!isAdmin&&!isManager),onChange:e=>setForm({...form,salesPerson:e.target.value})},
-                  h("option",{value:""},"Select..."),
-                  (isManager?managerScope:salesPeople).map(s=>h("option",{key:s,value:s},s)))
-              ),
+              h("div",null,h("label",null,"Sales Person"),h("select",{value:form.salesPerson,disabled:!isAdmin&&!isManager,onChange:e=>setForm({...form,salesPerson:e.target.value})},h("option",{value:""},"Select..."),spList.map(s=>h("option",{key:s,value:s},s)))),
               h("div",null,h("label",null,"Status"),h("select",{value:form.status,onChange:e=>setForm({...form,status:e.target.value})},h("option",{value:"Paid"},"Paid"),h("option",{value:"Deposit"},"Deposit"))),
-              h("div",{style:{gridColumn:"1 / -1"}},h("label",null,"Remark (Products Purchased)"),h("textarea",{value:form.remark,placeholder:"Describe products purchased...",onChange:e=>setForm({...form,remark:e.target.value})}))
+              h("div",{style:{gridColumn:"1 / -1"}},h("label",null,"Remark"),h("textarea",{value:form.remark,placeholder:"Products purchased...",onChange:e=>setForm({...form,remark:e.target.value})}))
             ),
             h("div",{style:{display:"flex",gap:8,marginTop:"1rem"}},
-              h("button",{type:"submit",className:"primary",disabled:saving},editingId?"Save changes":"Add Invoice"),
-              editingId&&h("button",{type:"button",onClick:resetForm},"Cancel")
+              h("button",{type:"submit",className:"primary",disabled:saving},editId?"Save Changes":"Add Invoice"),
+              editId&&h("button",{type:"button",onClick:resetForm},"Cancel")
             )
           )
         ),
-
-        h("div",{className:"filter-row"},
-          h("div",null,h("label",null,"Filter by Month"),h("input",{type:"month",value:filterMonth,onChange:e=>setFilterMonth(e.target.value)})),
-          (isAdmin||isManager)&&h("div",null,h("label",null,"Filter by Sales Person"),
-            h("select",{value:filterPerson,onChange:e=>setFilterPerson(e.target.value)},
-              h("option",{value:""},"All"),
-              (isManager?managerScope:salesPeople).map(s=>h("option",{key:s,value:s},s)))
-          ),
-          (filterMonth||filterPerson)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setFilterMonth("");setFilterPerson("");}},"Clear"))
+        h("div",{className:"frow"},
+          h("div",null,h("label",null,"Filter by Month"),h("input",{type:"month",value:fMonth,onChange:e=>setFMonth(e.target.value)})),
+          (isAdmin||isManager)&&h("div",null,h("label",null,"Filter by Sales Person"),h("select",{value:fPerson,onChange:e=>setFPerson(e.target.value)},h("option",{value:""},"All"),spList.map(s=>h("option",{key:s,value:s},s)))),
+          (fMonth||fPerson)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setFMonth("");setFPerson("");}},"Clear"))
         ),
-
-        h("div",{className:"grid",style:{gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",marginBottom:"1.25rem"}},
-          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Total Value"),h("div",{className:"svalue"},fmt(totals.total))),
-          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Software Value"),h("div",{className:"svalue"},fmt(totals.software))),
-          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Hardware Value"),h("div",{className:"svalue"},fmt(totals.hardware))),
-          h("div",{className:"stat-card stat-card-blue"},h("div",{className:"slabel"},"New Sub SW Value"),h("div",{className:"svalue svalue-blue"},fmt(totals.newSubSw))),
-          h("div",{className:"stat-card stat-card-green"},h("div",{className:"slabel"},"Renewal SW Value"),h("div",{className:"svalue svalue-green"},fmt(totals.renewalSw))),
-          h("div",{className:"stat-card"},h("div",{className:"slabel"},"Cases / Records"),h("div",{className:"svalue"},totals.cases+" / "+filteredInvoices.length))
+        h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:"1.25rem"}},
+          h("div",{className:"sc"},h("div",{className:"sl"},"Total Value"),h("div",{className:"sv"},fmt(totals.tot))),
+          h("div",{className:"sc"},h("div",{className:"sl"},"Software Value"),h("div",{className:"sv"},fmt(totals.sw))),
+          h("div",{className:"sc"},h("div",{className:"sl"},"Hardware Value"),h("div",{className:"sv"},fmt(totals.hw))),
+          h("div",{className:"sc sc-blue"},h("div",{className:"sl"},"New Sub SW Value"),h("div",{className:"sv sv-blue"},fmt(totals.nSw))),
+          h("div",{className:"sc sc-green"},h("div",{className:"sl"},"Renewal SW Value"),h("div",{className:"sv sv-green"},fmt(totals.rSw))),
+          h("div",{className:"sc"},h("div",{className:"sl"},"Cases / Records"),h("div",{className:"sv"},totals.cases+" / "+filtered.length))
         ),
-
         h("div",{className:"card",style:{padding:0,overflow:"hidden"}},
-          h("div",{className:"ovx"},
+          h("div",{style:{overflowX:"auto"}},
             h("table",null,
-              h("thead",null,h("tr",null,
-                ["No","Date","Invoice No","Customer","HW Value","SW Value","Total","Case","New Sub","Renewal","Branch","Person","Status","Remark",""]
-                .map(col=>h("th",{key:col},col))
-              )),
+              h("thead",null,h("tr",null,["No","Date","Invoice No","Customer","HW","SW","Total","Case","New","Ren","Branch","Person","Status","Remark",""].map(c=>h("th",{key:c},c)))),
               h("tbody",null,
-                filteredInvoices.length===0
-                  ?h("tr",null,h("td",{colSpan:15,className:"empty"},"No invoices yet. Add one above."))
-                  :filteredInvoices.slice().sort((a,b)=>a.date<b.date?1:-1).map((inv,idx)=>
-                    h("tr",{key:inv.id},
-                      h("td",null,idx+1),
-                      h("td",{style:{whiteSpace:"nowrap"}},inv.date),
-                      h("td",{style:{whiteSpace:"nowrap"}},inv.invoiceNo),
-                      h("td",null,inv.customer),
-                      h("td",{style:{whiteSpace:"nowrap"}},fmt(inv.hardwareValue)),
-                      h("td",{style:{whiteSpace:"nowrap"}},fmt(inv.softwareValue)),
-                      h("td",{style:{whiteSpace:"nowrap",fontWeight:600}},fmt(num(inv.hardwareValue)+num(inv.softwareValue))),
-                      h("td",null,inv.softwareCase),
-                      h("td",null,inv.newSub),
-                      h("td",null,inv.renewal),
-                      h("td",null,h("span",{className:"pill pill-gray"},inv.branch)),
-                      h("td",{style:{whiteSpace:"nowrap"}},inv.salesPerson),
-                      h("td",null,h("span",{className:"badge "+(inv.status==="Paid"?"badge-green":"badge-yellow")},inv.status)),
-                      h("td",{style:{maxWidth:200,color:"var(--text-2)"}},inv.remark),
-                      h("td",{style:{whiteSpace:"nowrap"}},
-                        h("button",{className:"icon edit-btn",disabled:saving,onClick:()=>{setForm({...inv});setEditingId(inv.id);window.scrollTo({top:0,behavior:"smooth"});}},"\u270F"),
-                        h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>deleteInvoice(inv.id)},"\u2715")
-                      )
-                    )
+                filtered.length===0?h("tr",null,h("td",{colSpan:15,style:{padding:"2rem",textAlign:"center",color:"var(--t3)"}},"No invoices yet.")):
+                filtered.slice().sort((a,b)=>a.date<b.date?1:-1).map((inv,i)=>h("tr",{key:inv.id},
+                  h("td",null,i+1),
+                  h("td",{style:{whiteSpace:"nowrap"}},inv.date),
+                  h("td",{style:{whiteSpace:"nowrap"}},inv.invoiceNo),
+                  h("td",null,inv.customer),
+                  h("td",{style:{whiteSpace:"nowrap"}},fmt(inv.hardwareValue)),
+                  h("td",{style:{whiteSpace:"nowrap"}},fmt(inv.softwareValue)),
+                  h("td",{style:{whiteSpace:"nowrap",fontWeight:600}},fmt(num(inv.hardwareValue)+num(inv.softwareValue))),
+                  h("td",null,inv.softwareCase),
+                  h("td",null,inv.newSub),
+                  h("td",null,inv.renewal),
+                  h("td",null,h("span",{className:"pill pill-g"},inv.branch)),
+                  h("td",{style:{whiteSpace:"nowrap"}},inv.salesPerson),
+                  h("td",null,h("span",{className:"badge "+(inv.status==="Paid"?"bg":"by")},inv.status)),
+                  h("td",{style:{maxWidth:200,color:"var(--t2)"}},inv.remark),
+                  h("td",{style:{whiteSpace:"nowrap"}},
+                    h("button",{className:"icon eb",disabled:saving,onClick:()=>{setForm({...inv});setEditId(inv.id);window.scrollTo({top:0,behavior:"smooth"});}},"Edit"),
+                    h("button",{className:"icon db",disabled:saving,onClick:()=>delInv(inv.id)},"Del")
                   )
+                ))
               )
             )
           )
         )
       ),
 
-      /* ── COMMISSION ── */
+      // ── COMMISSION ─────────────────────────────────────────────────────────
       tab==="commission"&&h("div",null,
-        h("div",{className:"filter-row"},
-          h("div",null,h("label",null,"Month"),h("input",{type:"month",value:reportMonth,onChange:e=>setReportMonth(e.target.value)})),
-          (isAdmin||isManager)&&h("div",null,h("label",null,"Sales Person"),
-            h("select",{value:reportPerson,onChange:e=>setReportPerson(e.target.value)},
-              h("option",{value:""},"All"),
-              (isManager?myTeamMembers:salesPeople).map(s=>h("option",{key:s,value:s},s)))
-          ),
-          (reportMonth||reportPerson)&&(isAdmin||isManager)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setReportMonth("");setReportPerson("");}},"Clear"))
+        h("div",{className:"frow"},
+          h("div",null,h("label",null,"Month"),h("input",{type:"month",value:rMonth,onChange:e=>setRMonth(e.target.value)})),
+          (isAdmin||isManager)&&h("div",null,h("label",null,"Sales Person"),h("select",{value:rPerson,onChange:e=>setRPerson(e.target.value)},h("option",{value:""},"All"),(isManager?myMembers:salesPpl).map(s=>h("option",{key:s,value:s},s)))),
+          (rMonth||rPerson)&&(isAdmin||isManager)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setRMonth("");setRPerson("");}},"Clear"))
         ),
-        reportData.length===0
-          ?h("div",{className:"card"},h("p",{className:"empty"},"No data for the selected period."))
-          :reportData.map(r=>h("div",{key:r.name,className:"commission-card"},
-            h("div",{className:"chead"},h("h3",null,r.name),h("span",{style:{fontSize:12,color:"var(--primary)"}},r.count+" invoice(s)")),
-            h("div",{className:"commission-row"},
-              h("div",{className:"rlabel"},
-                h("div",null,"New subscription software value"),
-                r.nTier
-                  ?h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Tier "+(NEWSUB_TIERS.indexOf(r.nTier)+1)+" ("+r.nTier.label+") — unlocks renewal at "+pctStr(r.rRateTier?r.rRateTier.pct:RENEWAL_BASE_PCT))
-                  :h("div",{style:{fontSize:11,color:"var(--warn)"}},r.newSubSw>0?"Below RM 2,256 — no new sub commission; renewal at base 3%":"No new sub value — renewal at base 3%")
-              ),
-              h("span",{className:"rval"},fmt(r.newSubSw)),
-              h("span",{className:"rpct"},pctStr(r.nPct)),
-              h("span",{className:"rcomm"+(r.nComm===0?" zero":"")},fmt(r.nComm))
-            ),
-            h("div",{className:"commission-row"},
-              h("div",{className:"rlabel"},
-                h("div",null,"Renewal software value"),
-                h("div",{style:{fontSize:11,color:r.rRateTier?"var(--text-3)":"var(--warn)"}},
-                  r.rRateTier?"Rate unlocked: "+r.rRateTier.label+" \u2192 "+pctStr(r.rPct):"Base rate (3%) \u2014 new sub below RM 8,000")
-              ),
-              h("span",{className:"rval"},fmt(r.renewalSw)),
-              h("span",{className:"rpct"},pctStr(r.rPct)),
-              h("span",{className:"rcomm"+(r.rComm===0?" zero":"")},fmt(r.rComm))
-            ),
-            h("div",{className:"commission-total"},h("span",null,"Total Commission"),h("span",null,fmt(r.totalCommission)))
-          )),
-        isAdmin&&reportData.length>1&&h("div",{className:"total-payout",style:{marginBottom:16}},
-          h("span",null,"Total payout \u2014 all sales persons"),
-          h("span",null,fmt(reportData.reduce((s,r)=>s+r.totalCommission,0)))
-        ),
-
-        isAdmin&&allTeamOverrides.length>0&&h("div",null,
-          h("div",{style:{display:"flex",alignItems:"center",gap:8,margin:"8px 0 10px",fontSize:13,fontWeight:600,color:"var(--text-2)"}},
-            h("span",null,"\uD83C\uDFC5 Manager Override Commissions")
+        repData.length===0?h("div",{className:"card"},h("p",{style:{color:"var(--t3)",textAlign:"center",padding:"2rem"}},"No data for selected period.")):
+        repData.map(r=>h("div",{key:r.name,className:"cc"},
+          h("div",{className:"chead"},h("h3",null,r.name),h("span",{style:{fontSize:12,color:"var(--primary)"}},r.cnt+" invoice(s)")),
+          h("div",{className:"crow"},
+            h("div",{className:"rl"},h("div",null,"New subscription software value"),h("div",{style:{fontSize:11,color:r.nt?"var(--t3)":"var(--warn)"}},r.nt?"Tier "+(NEWSUB_TIERS.indexOf(r.nt)+1)+" ("+r.nt.label+")":r.nSw>0?"Below RM 2,256 - no commission":"No new sub value")),
+            h("span",{className:"rv"},fmt(r.nSw)),h("span",{className:"rp"},pct(r.np)),h("span",{className:"rc"+(r.nc===0?" z":"")},fmt(r.nc))
           ),
-          allTeamOverrides.map(t=>h("div",{key:t.teamName,className:"commission-card",style:{marginBottom:8}},
+          h("div",{className:"crow"},
+            h("div",{className:"rl"},h("div",null,"Renewal software value"),h("div",{style:{fontSize:11,color:r.rrt?"var(--t3)":"var(--warn)"}},r.rrt?"Rate unlocked: "+r.rrt.label:"Base rate (3%) - new sub below RM 8,000")),
+            h("span",{className:"rv"},fmt(r.rSw)),h("span",{className:"rp"},pct(r.rp)),h("span",{className:"rc"+(r.rc===0?" z":"")},fmt(r.rc))
+          ),
+          h("div",{className:"ctot"},h("span",null,"Total Commission"),h("span",null,fmt(r.total)))
+        )),
+        isAdmin&&repData.length>1&&h("div",{className:"tpay",style:{background:"var(--primary)",color:"#fff",marginBottom:16}},
+          h("span",null,"Total payout - all sales persons"),
+          h("span",null,fmt(repData.reduce((s,r)=>s+r.total,0)))
+        ),
+        isAdmin&&allOverrides.length>0&&h("div",null,
+          h("p",{style:{fontWeight:600,fontSize:13,color:"var(--t2)",margin:"8px 0 10px"}},"Manager Override Commissions"),
+          allOverrides.map(t=>h("div",{key:t.teamName,className:"cc",style:{marginBottom:8}},
             h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
               h("h3",{style:{color:"var(--success)"}},t.teamName),
-              h("span",{style:{fontSize:12,color:"var(--success)"}},"Manager: "+t.managerName+" \u2022 Override: "+pctStr(t.overridePct))
+              h("span",{style:{fontSize:12,color:"var(--success)"}},"Manager: "+t.mgr+" | Override: "+pct(t.p))
             ),
-            h("div",{className:"commission-row"},
-              h("div",{className:"rlabel"},
-                h("div",null,"Team total commission"),
-                h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Sum of team members' commission this period")
-              ),
-              h("span",{className:"rval"},fmt(t.teamTotalCommission)),
-              h("span",{className:"rpct"},pctStr(t.overridePct)),
-              h("span",{className:"rcomm"},fmt(t.overrideAmt))
+            h("div",{className:"crow"},
+              h("div",{className:"rl"},h("div",null,"Team total commission"),h("div",{style:{fontSize:11,color:"var(--t3)"}},"Sum of team members' commission this period")),
+              h("span",{className:"rv"},fmt(t.tc)),h("span",{className:"rp"},pct(t.p)),h("span",{className:"rc"},fmt(t.amt))
             ),
-            h("div",{className:"commission-total",style:{background:"#f0fdf4"}},
-              h("span",null,t.managerName+"'s override commission"),
-              h("span",{style:{color:"var(--success)"}},fmt(t.overrideAmt))
-            )
+            h("div",{className:"ctot",style:{background:"#f0fdf4"}},h("span",null,t.mgr+"'s override commission"),h("span",{style:{color:"var(--success)"}},fmt(t.amt)))
           )),
-          allTeamOverrides.length>1&&h("div",{className:"total-payout",style:{background:"var(--success)",marginTop:4}},
+          allOverrides.length>1&&h("div",{className:"tpay",style:{background:"var(--success)",color:"#fff",marginTop:4}},
             h("span",null,"Total manager override payout"),
-            h("span",null,fmt(allTeamOverrides.reduce((s,t)=>s+t.overrideAmt,0)))
+            h("span",null,fmt(allOverrides.reduce((s,t)=>s+t.amt,0)))
           )
         ),
+        isManager&&mgrOverride&&h("div",{className:"cc",style:{marginTop:8}},
+          h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},h("h3",{style:{color:"var(--success)"}},"Your Override Commission - "+mgrOverride.teamName),h("span",{style:{fontSize:12,color:"var(--success)"}},"Override on team payout")),
+          h("div",{className:"crow"},h("div",{className:"rl"},h("div",null,"Team total commission"),h("div",{style:{fontSize:11,color:"var(--t3)"}},"Sum of team members' commission")),h("span",{className:"rv"},fmt(mgrOverride.tc)),h("span",{className:"rp"},pct(mgrOverride.p)),h("span",{className:"rc"},fmt(mgrOverride.amt))),
+          h("div",{className:"ctot",style:{background:"#f0fdf4"}},h("span",null,"Your override commission"),h("span",{style:{color:"var(--success)"}},fmt(mgrOverride.amt)))
+        )
+      ),
 
-        isManager&&managerOverride&&h("div",{className:"commission-card",style:{marginTop:8}},
-          h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
-            h("h3",{style:{color:"var(--success)"}},"\uD83C\uDFC5 Your Override Commission \u2014 "+managerOverride.teamName),
-            h("span",{style:{fontSize:12,color:"var(--success)"}},"Your override on team payout")
-          ),
-          h("div",{className:"commission-row"},
-            h("div",{className:"rlabel"},
-              h("div",null,"Team total commission"),
-              h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Sum of all team members' commission this period")
-            ),
-            h("span",{className:"rval"},fmt(managerOverride.teamTotalCommission)),
-            h("span",{className:"rpct"},pctStr(managerOverride.overridePct)),
-            h("span",{className:"rcomm"},fmt(managerOverride.overrideAmt))
-          ),
-          h("div",{className:"commission-total",style:{background:"#f0fdf4"}},
-            h("span",null,"Your override commission"),
-            h("span",{style:{color:"var(--success)"}},fmt(managerOverride.overrideAmt))
+      // ── ANALYTICS ──────────────────────────────────────────────────────────
+      tab==="analytics"&&h("div",null,
+        h("div",{className:"frow"},
+          h("div",null,h("label",null,"Filter by Month"),h("input",{type:"month",value:aMonth,onChange:e=>setAMonth(e.target.value)})),
+          aMonth&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>setAMonth("")},"Clear"))
+        ),
+        h("div",{className:"kgrid"},
+          h("div",{className:"kc k1"},h("div",{className:"kv"},fmt(ana.tS)),h("div",{className:"kl"},"Total Sales")),
+          h("div",{className:"kc k4"},h("div",{className:"kv"},fmt(ana.tSW)),h("div",{className:"kl"},"Software Value")),
+          h("div",{className:"kc k3"},h("div",{className:"kv"},fmt(ana.tHW)),h("div",{className:"kl"},"Hardware Value")),
+          h("div",{className:"kc k2"},h("div",{className:"kv"},fmt(ana.tNSW)),h("div",{className:"kl"},"New Sub SW")),
+          h("div",{className:"kc k5"},h("div",{className:"kv"},fmt(ana.tRSW)),h("div",{className:"kl"},"Renewal SW")),
+          h("div",{className:"kc k6"},h("div",{className:"kv"},ana.cnt),h("div",{className:"kl"},"Invoices"))
+        ),
+        h("div",{className:"seg"},
+          h("button",{className:"seg-b"+(aSeg==="person"?" on":""),onClick:()=>setASeg("person")},"By Sales Person"),
+          h("button",{className:"seg-b"+(aSeg==="branch"?" on":""),onClick:()=>setASeg("branch")},"By Branch")
+        ),
+        h("div",{className:"agrid"},
+          h(PieChart,{title:"Total Sales Value",subtitle:aSeg==="person"?"By sales person":"By branch",data:aSeg==="person"?ana.bySP:ana.byBr}),
+          h(PieChart,{title:"Software Sales Value",subtitle:aSeg==="person"?"By sales person":"By branch",data:aSeg==="person"?ana.swSP:ana.swBr})
+        ),
+        h("div",{className:"agrid"},
+          h(PieChart,{title:"New Subscription SW Value",subtitle:aSeg==="person"?"By sales person":"By branch",data:aSeg==="person"?ana.nSP:ana.nBr}),
+          h(PieChart,{title:"Renewal SW Value",subtitle:aSeg==="person"?"By sales person":"By branch",data:aSeg==="person"?ana.rSP:ana.rBr})
+        ),
+        h("div",{className:"agrid"},
+          h("div",{className:"chart-card"},h("h4",null,"Total Sales - "+(aSeg==="person"?"By Sales Person":"By Branch")),h("div",{className:"chart-sub"},"Ranked by total invoice value"),h(HBar,{data:aSeg==="person"?ana.bySP:ana.byBr,color:"#2563eb"})),
+          h("div",{className:"chart-card"},
+            h("h4",null,"New Sub vs Renewal - "+(aSeg==="person"?"By Person":"By Branch")),
+            h("div",{className:"chart-sub"},"New subscription vs renewal software value"),
+            h("p",{style:{fontSize:11,fontWeight:600,color:"var(--primary)",marginBottom:4}},"New Subscription"),
+            h(HBar,{data:aSeg==="person"?ana.nSP:ana.nBr,color:"#2563eb"}),
+            h("p",{style:{fontSize:11,fontWeight:600,color:"var(--success)",margin:"10px 0 4px"}},"Renewal"),
+            h(HBar,{data:aSeg==="person"?ana.rSP:ana.rBr,color:"#16a34a"})
+          )
+        ),
+        h("div",{className:"card",style:{marginTop:4}},
+          h("h4",{style:{marginBottom:4}},"Products Purchased Analysis"),
+          h("p",{style:{fontSize:12,color:"var(--t3)",marginBottom:"1rem"}},ana.prods.length+" unique product entries."),
+          ana.prods.length===0?h("p",{style:{color:"var(--t3)",textAlign:"center",padding:"1.5rem"}},"Fill in invoice remarks to see product analysis."):
+          h("div",{style:{overflowX:"auto"}},
+            h("table",{className:"pt"},
+              h("thead",null,h("tr",null,h("th",null,"#"),h("th",null,"Product / Remark"),h("th",{style:{textAlign:"right"}},"Count"),h("th",{style:{textAlign:"right"}},"New Sub"),h("th",{style:{textAlign:"right"}},"Renewal"),h("th",{style:{textAlign:"right"}},"Total Value"))),
+              h("tbody",null,ana.prods.slice(0,50).map((p,i)=>h("tr",{key:i},
+                h("td",{style:{color:"var(--t3)",width:30}},i+1),
+                h("td",null,p.label),
+                h("td",{style:{textAlign:"right",fontWeight:600}},p.count),
+                h("td",{style:{textAlign:"right",color:"var(--primary)"}},(p.ns||0)>0?p.ns:"-"),
+                h("td",{style:{textAlign:"right",color:"var(--success)"}},(p.rn||0)>0?p.rn:"-"),
+                h("td",{style:{textAlign:"right",whiteSpace:"nowrap"}},fmt(p.val))
+              )))
+            )
           )
         )
       ),
 
-      /* ── TIER RATES ── */
-      tab==="tiers"&&h("div",{className:"grid g3"},
-        h("div",{className:"card tier-card"},
-          h("div",{className:"tier-card-head"},
-            h("div",{className:"tier-icon tier-icon-blue"},"\uD83D\uDCC8"),
-            h("div",null,
-              h("h3",{style:{marginBottom:2}},"New Subscription Commission"),
-              h("p",{style:{fontSize:12,color:"var(--text-2)"}},"Based on own monthly new sub SW value")
-            )
-          ),
-          h("table",{className:"tier-table"},
+      // ── TIER RATES ─────────────────────────────────────────────────────────
+      tab==="tiers"&&h("div",{className:"g3"},
+        h("div",{className:"card"},
+          h("div",{className:"tc-head"},h("div",{className:"ti ti-b"},"📈"),h("div",null,h("h3",{style:{marginBottom:2}},"New Subscription Commission"),h("p",{style:{fontSize:12,color:"var(--t2)"}},"Based on own monthly new sub SW value"))),
+          h("table",{className:"tt"},
             h("thead",null,h("tr",null,h("th",null,"Tier"),h("th",null,"Monthly New Sub SW Value"),h("th",{style:{textAlign:"right"}},"Rate"))),
             h("tbody",null,
-              h("tr",null,h("td",null,h("span",{className:"tier-num"},"1")),h("td",null,"RM 2,256 – RM 11,280"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-blue-1"},"8%"))),
-              h("tr",null,h("td",null,h("span",{className:"tier-num"},"2")),h("td",null,"RM 11,281 – RM 20,304"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-blue-2"},"12%"))),
-              h("tr",null,h("td",null,h("span",{className:"tier-num"},"3")),h("td",null,"> RM 20,304"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-blue-3"},"18%")))
+              h("tr",null,h("td",null,h("span",{className:"tn"},"1")),h("td",null,"RM 2,256 - RM 11,280"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rb1"},"8%"))),
+              h("tr",null,h("td",null,h("span",{className:"tn"},"2")),h("td",null,"RM 11,281 - RM 20,304"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rb2"},"12%"))),
+              h("tr",null,h("td",null,h("span",{className:"tn"},"3")),h("td",null,"> RM 20,304"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rb3"},"18%")))
             )
           ),
-          h("p",{className:"tier-note"},"\u26A0\uFE0F Below RM 2,256: no new subscription commission paid.")
+          h("p",{className:"tnote"},"Below RM 2,256: no commission paid.")
         ),
-        h("div",{className:"card tier-card"},
-          h("div",{className:"tier-card-head"},
-            h("div",{className:"tier-icon tier-icon-green"},"\uD83D\uDD04"),
-            h("div",null,
-              h("h3",{style:{marginBottom:2}},"Renewal Commission Rate"),
-              h("p",{style:{fontSize:12,color:"var(--text-2)"}},"Unlocked by new subscription value achieved")
-            )
-          ),
-          h("table",{className:"tier-table"},
+        h("div",{className:"card"},
+          h("div",{className:"tc-head"},h("div",{className:"ti ti-g"},"🔄"),h("div",null,h("h3",{style:{marginBottom:2}},"Renewal Commission Rate"),h("p",{style:{fontSize:12,color:"var(--t2)"}},"Unlocked by new subscription value achieved"))),
+          h("table",{className:"tt"},
             h("thead",null,h("tr",null,h("th",null,"New Sub Value Achieved"),h("th",{style:{textAlign:"right"}},"Renewal Rate"))),
             h("tbody",null,
-              h("tr",null,h("td",null,"Below RM 8,000 ",h("span",{style:{color:"var(--text-3)"}},"(base)")),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-gray"},"3%"))),
-              h("tr",null,h("td",null,"> RM 8,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-green-1"},"6%"))),
-              h("tr",null,h("td",null,"> RM 14,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-green-2"},"9%"))),
-              h("tr",null,h("td",null,"> RM 20,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rate-badge rate-green-3"},"12%")))
+              h("tr",null,h("td",null,"Below RM 8,000 (base)"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rgr"},"3%"))),
+              h("tr",null,h("td",null,"> RM 8,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rg1"},"6%"))),
+              h("tr",null,h("td",null,"> RM 14,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rg2"},"9%"))),
+              h("tr",null,h("td",null,"> RM 20,000"),h("td",{style:{textAlign:"right"}},h("span",{className:"rb rg3"},"12%")))
             )
           ),
-          h("p",{className:"tier-note tier-note-ok"},"\u2713 No minimum renewal value required.")
+          h("p",{className:"tnote tnote-ok"},"No minimum renewal value required.")
         ),
-        h("div",{className:"card",style:{gridColumn:"1/-1",background:"var(--primary-light)",border:"1px solid #c7d9fd"}},
-          h("h3",{style:{marginBottom:"10px",display:"flex",alignItems:"center",gap:8}},h("span",null,"\uD83D\uDCA1"),"How Commission is Calculated"),
-          h("div",{className:"grid",style:{gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:"14px"}},
-            h("div",{className:"calc-block"},
-              h("div",{className:"calc-label"},"New Subscription"),
-              h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.6}},"Total new sub SW value for the month is matched to the tier table. If it reaches RM 2,256, the rate applies to the full new sub total.")
-            ),
-            h("div",{className:"calc-block"},
-              h("div",{className:"calc-label"},"Renewal"),
-              h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.6}},"Rate depends on how much new subscription value is achieved that month: > RM 20,000 \u2192 12%; > RM 14,000 \u2192 9%; > RM 8,000 \u2192 6%; otherwise base 3%.")
-            ),
-            h("div",{className:"calc-block"},
-              h("div",{className:"calc-label"},"Per Invoice"),
-              h("p",{style:{fontSize:13,color:"var(--text-2)",lineHeight:1.6}},"If New Subscription count > 0, full software value counts as new sub. If Renewal count > 0, full software value counts as renewal. A single invoice should not have both.")
-            )
+        h("div",{className:"card",style:{gridColumn:"1/-1",background:"var(--pl)",border:"1px solid #c7d9fd"}},
+          h("h3",{style:{marginBottom:10}},"How Commission is Calculated"),
+          h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12}},
+            h("div",{className:"cb"},h("div",{className:"cl"},"New Subscription"),h("p",{style:{fontSize:13,color:"var(--t2)",lineHeight:1.6}},"Monthly new sub SW totalled per person. If >= RM 2,256 the tier rate applies to the full total.")),
+            h("div",{className:"cb"},h("div",{className:"cl"},"Renewal"),h("p",{style:{fontSize:13,color:"var(--t2)",lineHeight:1.6}},"Rate depends on new sub achieved: >RM20k=12%, >RM14k=9%, >RM8k=6%, else 3%.")),
+            h("div",{className:"cb"},h("div",{className:"cl"},"Per Invoice"),h("p",{style:{fontSize:13,color:"var(--t2)",lineHeight:1.6}},"If New Sub count > 0, full SW value = new sub. If Renewal count > 0, full SW value = renewal."))
           )
         )
       ),
 
-      /* ── SETTINGS ── */
-      tab==="settings"&&isAdmin&&h("div",{className:"grid",style:{gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16}},
+      // ── MY TEAM ────────────────────────────────────────────────────────────
+      tab==="myteam"&&isManager&&h("div",null,
+        h("div",{className:"card",style:{marginBottom:"1.25rem",borderLeft:"4px solid var(--primary)"}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},h("h3",{style:{margin:0}},myTeam?myTeam.name:"My Team"),h("span",{className:"team-badge"},"Manager: "+me.name)),
+          myTeam&&h("div",{style:{fontSize:13,color:"var(--t2)"}},"Override: ",h("strong",null,myTeam.overridePct+"% of team payout")," | Members: ",(myTeam.members||[]).join(", ")||"None")
+        ),
+        h("div",{className:"frow"},
+          h("div",null,h("label",null,"Month"),h("input",{type:"month",value:rMonth,onChange:e=>setRMonth(e.target.value)})),
+          h("div",null,h("label",null,"Member"),h("select",{value:rPerson,onChange:e=>setRPerson(e.target.value)},h("option",{value:""},"All"),myMembers.map(s=>h("option",{key:s,value:s},s)))),
+          (rMonth||rPerson)&&h("div",{style:{alignSelf:"flex-end"}},h("button",{onClick:()=>{setRMonth("");setRPerson("");}},"Clear"))
+        ),
+        repData.length===0?h("div",{className:"card"},h("p",{style:{color:"var(--t3)",textAlign:"center",padding:"2rem"}},"No data.")):
+        repData.map(r=>h("div",{key:r.name,className:"cc"},
+          h("div",{className:"chead"},h("h3",null,r.name),h("span",{style:{fontSize:12,color:"var(--primary)"}},r.cnt+" invoice(s)")),
+          h("div",{className:"crow"},h("div",{className:"rl"},h("div",null,"New subscription SW"),h("div",{style:{fontSize:11,color:r.nt?"var(--t3)":"var(--warn)"}},r.nt?"Tier "+(NEWSUB_TIERS.indexOf(r.nt)+1):r.nSw>0?"Below RM 2,256":"No new sub")),h("span",{className:"rv"},fmt(r.nSw)),h("span",{className:"rp"},pct(r.np)),h("span",{className:"rc"+(r.nc===0?" z":"")},fmt(r.nc))),
+          h("div",{className:"crow"},h("div",{className:"rl"},h("div",null,"Renewal SW"),h("div",{style:{fontSize:11,color:r.rrt?"var(--t3)":"var(--warn)"}},r.rrt?"Rate unlocked: "+r.rrt.label:"Base rate 3%")),h("span",{className:"rv"},fmt(r.rSw)),h("span",{className:"rp"},pct(r.rp)),h("span",{className:"rc"+(r.rc===0?" z":"")},fmt(r.rc))),
+          h("div",{className:"ctot"},h("span",null,"Total"),h("span",null,fmt(r.total)))
+        )),
+        mgrOverride&&h("div",{className:"cc",style:{marginTop:8}},
+          h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},h("h3",{style:{color:"var(--success)"}},"Your Override Commission"),h("span",{style:{fontSize:12,color:"var(--success)"}},mgrOverride.teamName)),
+          h("div",{className:"crow"},h("div",{className:"rl"},h("div",null,"Team total commission"),h("div",{style:{fontSize:11,color:"var(--t3)"}},"Sum of team members")),h("span",{className:"rv"},fmt(mgrOverride.tc)),h("span",{className:"rp"},pct(mgrOverride.p)),h("span",{className:"rc"},fmt(mgrOverride.amt))),
+          h("div",{className:"ctot",style:{background:"#f0fdf4"}},h("span",null,"Your override"),h("span",{style:{color:"var(--success)"}},fmt(mgrOverride.amt)))
+        )
+      ),
 
+      // ── SETTINGS ───────────────────────────────────────────────────────────
+      tab==="settings"&&isAdmin&&h("div",{className:"g3"},
         h("div",{className:"card"},
           h("h3",{style:{marginBottom:"1rem"}},"Sales Persons"),
           h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
-            salesPeople.map(s=>h("li",{key:s,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
+            salesPpl.map(s=>h("li",{key:s,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
               h("span",{style:{fontSize:13}},s),
-              h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>removeSalesPerson(s)},"\u2715")
+              h("button",{className:"icon db",disabled:saving,onClick:()=>{if(confirm("Remove "+s+"?")) saveSP(salesPpl.filter(x=>x!==s));}},"x")
             ))
           ),
           h("div",{style:{display:"flex",gap:8}},
-            h("input",{placeholder:"New sales person name",value:newSalesName,onChange:e=>setNewSalesName(e.target.value)}),
-            h("button",{className:"primary",disabled:saving,onClick:addSalesPerson},"Add")
+            h("input",{placeholder:"New sales person",value:newSales,onChange:e=>setNewSales(e.target.value)}),
+            h("button",{className:"primary",disabled:saving,onClick:()=>{const n=newSales.trim();if(n&&!salesPpl.includes(n)){saveSP([...salesPpl,n]);setNewSales("");}}},"Add")
           )
         ),
-
         h("div",{className:"card"},
           h("h3",{style:{marginBottom:"1rem"}},"User Accounts"),
           h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
             users.map(u=>h("li",{key:u.username||u.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
-              h("div",null,
-                h("span",{style:{fontSize:13,fontWeight:500}},u.username),
-                h("span",{style:{fontSize:12,color:"var(--text-3)",marginLeft:6}},"("+u.role+") "+u.name),
-                u.role==="manager"&&h("span",{className:"mgr-badge"},"Manager")
-              ),
-              u.username!=="admin"&&h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>removeUser(u.username)},"\u2715")
+              h("div",null,h("span",{style:{fontSize:13,fontWeight:500}},u.username),h("span",{style:{fontSize:12,color:"var(--t3)",marginLeft:6}},"("+u.role+") "+u.name),u.role==="manager"&&h("span",{className:"mgr-b"},"Manager")),
+              u.username!=="admin"&&h("button",{className:"icon db",disabled:saving,onClick:()=>delUser(u.username)},"x")
             ))
           ),
-          h("p",{style:{fontSize:12,color:"var(--text-2)",marginBottom:8}},"Add new sales person account:"),
+          h("p",{style:{fontSize:12,color:"var(--t2)",marginBottom:8}},"Add sales person account:"),
           h("div",{style:{display:"grid",gap:8}},
-            h("input",{placeholder:"Username",value:newUserForm.username,onChange:e=>setNewUserForm({...newUserForm,username:e.target.value})}),
-            h("input",{placeholder:"Password",value:newUserForm.password,onChange:e=>setNewUserForm({...newUserForm,password:e.target.value})}),
-            h("input",{placeholder:"Display name (must match sales person list)",value:newUserForm.name,onChange:e=>setNewUserForm({...newUserForm,name:e.target.value})}),
+            h("input",{placeholder:"Username",value:newUF.u,onChange:e=>setNewUF({...newUF,u:e.target.value})}),
+            h("input",{placeholder:"Password",value:newUF.p,onChange:e=>setNewUF({...newUF,p:e.target.value})}),
+            h("input",{placeholder:"Display name",value:newUF.n,onChange:e=>setNewUF({...newUF,n:e.target.value})}),
             h("button",{className:"primary",disabled:saving,onClick:addUser},"Add User")
           )
         ),
-
         h("div",{className:"card",style:{gridColumn:"1 / -1"}},
           h("div",{className:"team-head"},
-            h("h3",{style:{margin:0}},"\uD83D\uDC65 Teams & Manager Override Commission"),
-            !showTeamForm&&h("button",{className:"primary",onClick:()=>{resetTeamForm();setShowTeamForm(true);}},"+ New Team"),
-            showTeamForm&&h("button",{onClick:resetTeamForm},"\u2715 Cancel")
+            h("h3",{style:{margin:0}},"Teams & Manager Override Commission"),
+            !showTF&&h("button",{className:"primary",onClick:()=>{setTeamF({name:"",mgr:"",pct:"5",members:[]});setEditTeam(null);setShowTF(true);}},"+ New Team"),
+            showTF&&h("button",{onClick:resetTF},"x Cancel")
           ),
-
-          showTeamForm&&h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"1rem",marginBottom:"1rem"}},
-            h("h4",{style:{marginBottom:12,fontSize:13}},(editingTeamId?"Edit":"Create")+" Team"),
-            h("div",{className:"grid g2",style:{marginBottom:10}},
-              h("div",null,
-                h("label",null,"Team Name"),
-                h("input",{value:teamForm.name,placeholder:"e.g. North Region",onChange:e=>setTeamForm({...teamForm,name:e.target.value})})
-              ),
-              h("div",null,
-                h("label",null,"Manager (Sales Person)"),
-                h("select",{value:teamForm.managerName,onChange:e=>setTeamForm({...teamForm,managerName:e.target.value})},
-                  h("option",{value:""},"Select manager..."),
-                  salesPeople.map(s=>h("option",{key:s,value:s},s))
-                )
-              ),
-              h("div",null,
-                h("label",null,"Override Commission % (of team total payout)"),
-                h("input",{type:"number",min:"0",max:"100",step:"0.5",value:teamForm.overridePct,
-                  onChange:e=>setTeamForm({...teamForm,overridePct:e.target.value})})
-              )
+          showTF&&h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"1rem",marginBottom:"1rem"}},
+            h("h4",{style:{marginBottom:12,fontSize:13}},(editTeam?"Edit":"Create")+" Team"),
+            h("div",{className:"g2",style:{marginBottom:10}},
+              h("div",null,h("label",null,"Team Name"),h("input",{value:teamF.name,placeholder:"e.g. North Region",onChange:e=>setTeamF({...teamF,name:e.target.value})})),
+              h("div",null,h("label",null,"Manager"),h("select",{value:teamF.mgr,onChange:e=>setTeamF({...teamF,mgr:e.target.value})},h("option",{value:""},"Select..."),salesPpl.map(s=>h("option",{key:s,value:s},s)))),
+              h("div",null,h("label",null,"Override Commission %"),h("input",{type:"number",min:"0",max:"100",step:"0.5",value:teamF.pct,onChange:e=>setTeamF({...teamF,pct:e.target.value})}))
             ),
             h("div",null,
-              h("label",null,"Team Members (Sales Persons)"),
+              h("label",null,"Team Members"),
               h("div",{style:{display:"flex",gap:8,marginBottom:8}},
-                h("select",{value:teamMemberInput,onChange:e=>setTeamMemberInput(e.target.value)},
-                  h("option",{value:""},"Add member..."),
-                  salesPeople.filter(s=>s!==teamForm.managerName&&!teamForm.members.includes(s))
-                    .map(s=>h("option",{key:s,value:s},s))
-                ),
-                h("button",{className:"primary",onClick:addTeamMember,disabled:!teamMemberInput},"Add")
+                h("select",{value:tmInp,onChange:e=>setTmInp(e.target.value)},h("option",{value:""},"Add member..."),salesPpl.filter(s=>s!==teamF.mgr&&!teamF.members.includes(s)).map(s=>h("option",{key:s,value:s},s))),
+                h("button",{className:"primary",onClick:()=>{if(tmInp&&!teamF.members.includes(tmInp)){setTeamF(f=>({...f,members:[...f.members,tmInp]}));setTmInp("");}},disabled:!tmInp},"Add")
               ),
-              teamForm.members.length>0&&h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}},
-                teamForm.members.map(m=>h("span",{key:m,style:{display:"inline-flex",alignItems:"center",gap:4,background:"var(--primary-light)",color:"var(--primary)",borderRadius:999,padding:"3px 10px",fontSize:12,fontWeight:500}},
-                  m,
-                  h("button",{onClick:()=>removeTeamMember(m),style:{border:"none",background:"none",cursor:"pointer",color:"var(--primary)",padding:"0 2px",fontSize:14,lineHeight:1}},"\u00D7")
+              teamF.members.length>0&&h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}},
+                teamF.members.map(m=>h("span",{key:m,style:{display:"inline-flex",alignItems:"center",gap:4,background:"var(--pl)",color:"var(--primary)",borderRadius:999,padding:"3px 10px",fontSize:12,fontWeight:500}},
+                  m,h("button",{onClick:()=>setTeamF(f=>({...f,members:f.members.filter(x=>x!==m)})),style:{border:"none",background:"none",cursor:"pointer",color:"var(--primary)",padding:"0 2px",fontSize:14,lineHeight:1}},"x")
                 ))
               )
             ),
             h("div",{style:{display:"flex",gap:8,marginTop:8}},
-              h("button",{className:"primary",disabled:saving,onClick:saveTeam},saving?"Saving...":editingTeamId?"Save Changes":"Create Team"),
-              h("button",{onClick:resetTeamForm},"Cancel")
+              h("button",{className:"primary",disabled:saving,onClick:saveTeam},saving?"Saving...":editTeam?"Save Changes":"Create Team"),
+              h("button",{onClick:resetTF},"Cancel")
             )
           ),
-
-          teams.length===0
-            ?h("p",{style:{color:"var(--text-3)",fontSize:13}},"No teams yet. Create one above.")
-            :h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12}},
-              teams.map(t=>h("div",{key:t.id,className:"card team-card",style:{padding:"1rem"}},
-                h("div",{className:"team-head"},
-                  h("div",null,
-                    h("div",{style:{fontWeight:600,fontSize:14}},t.name),
-                    h("div",{style:{fontSize:12,color:"var(--text-2)",marginTop:2}},
-                      h("span",{className:"team-badge"},"\uD83C\uDFC5 ",t.managerName),
-                      h("span",{style:{marginLeft:8,color:"var(--text-3)"}},"Override: ",h("strong",null,t.overridePct+"%"))
-                    )
-                  ),
-                  h("div",{style:{display:"flex",gap:4}},
-                    h("button",{className:"icon edit-btn",onClick:()=>startEditTeam(t)},"\u270F"),
-                    h("button",{className:"icon delete-btn",disabled:saving,onClick:()=>deleteTeam(t.id)},"\u2715")
-                  )
-                ),
-                h("ul",{style:{listStyle:"none",padding:0,margin:0}},
-                  (t.members||[]).length===0
-                    ?h("li",{style:{fontSize:12,color:"var(--text-3)",padding:"6px 0"}},"No members yet.")
-                    :(t.members||[]).map(m=>h("li",{key:m,className:"team-member-row"},
-                      h("span",null,m),
-                      h("span",{style:{fontSize:11,color:"var(--text-3)"}},"sales")
-                    ))
+          teams.length===0?h("p",{style:{color:"var(--t3)",fontSize:13}},"No teams yet."):
+          h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12}},
+            teams.map(t=>h("div",{key:t.id,className:"card team-card",style:{padding:"1rem"}},
+              h("div",{className:"team-head"},
+                h("div",null,h("div",{style:{fontWeight:600,fontSize:14}},t.name),h("div",{style:{fontSize:12,color:"var(--t2)",marginTop:2}},h("span",{className:"team-badge"},t.managerName),h("span",{style:{marginLeft:8,color:"var(--t3)"}},"Override: ",h("strong",null,t.overridePct+"%")))),
+                h("div",{style:{display:"flex",gap:4}},
+                  h("button",{className:"icon eb",onClick:()=>{setTeamF({name:t.name,mgr:t.managerName,pct:String(t.overridePct||5),members:t.members||[]});setEditTeam(t.id);setShowTF(true);}},"Edit"),
+                  h("button",{className:"icon db",disabled:saving,onClick:()=>delTeam(t.id)},"Del")
                 )
-              ))
-            )
-        )
-      ),
-
-      /* ── MY TEAM (manager view) ── */
-      tab==="myteam"&&isManager&&h("div",null,
-        h("div",{className:"card",style:{marginBottom:"1.25rem",borderLeft:"4px solid var(--primary)"}},
-          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.75rem"}},
-            h("h3",{style:{margin:0}},"\uD83D\uDC65 "+myTeam.name),
-            h("span",{className:"team-badge"},"\uD83C\uDFC5 Manager: "+currentUser.name)
-          ),
-          h("div",{style:{fontSize:13,color:"var(--text-2)",marginBottom:4}},
-            h("strong",null,"Override commission: "),myTeam.overridePct+"% of team total commission payout"
-          ),
-          h("div",{style:{fontSize:13,color:"var(--text-2)"}},"Team members: ",
-            (myTeam.members||[]).join(", ")||h("em",null,"None assigned")
-          )
-        ),
-        h("div",{className:"filter-row"},
-          h("div",null,
-            h("label",null,"Filter by Month"),
-            h("input",{type:"month",value:reportMonth,onChange:e=>setReportMonth(e.target.value)})
-          ),
-          h("div",null,
-            h("label",null,"Filter by Member"),
-            h("select",{value:reportPerson,onChange:e=>setReportPerson(e.target.value)},
-              h("option",{value:""},"All members"),
-              myTeamMembers.map(s=>h("option",{key:s,value:s},s))
-            )
-          ),
-          (reportMonth||reportPerson)&&h("div",{style:{alignSelf:"flex-end"}},
-            h("button",{onClick:()=>{setReportMonth("");setReportPerson("");}},"Clear")
-          )
-        ),
-        reportData.length===0
-          ?h("div",{className:"card"},h("p",{className:"empty"},"No data for the selected period."))
-          :reportData.map(r=>h("div",{key:r.name,className:"commission-card"},
-            h("div",{className:"chead"},h("h3",null,r.name),h("span",{style:{fontSize:12,color:"var(--primary)"}},r.count+" invoice(s)")),
-            h("div",{className:"commission-row"},
-              h("div",{className:"rlabel"},
-                h("div",null,"New subscription software value"),
-                r.nTier
-                  ?h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Tier "+(NEWSUB_TIERS.indexOf(r.nTier)+1)+" ("+r.nTier.label+") \u2014 unlocks renewal at "+pctStr(r.rRateTier?r.rRateTier.pct:RENEWAL_BASE_PCT))
-                  :h("div",{style:{fontSize:11,color:"var(--warn)"}},r.newSubSw>0?"Below RM 2,256 \u2014 no new sub commission; renewal at base 3%":"No new sub value \u2014 renewal at base 3%")
               ),
-              h("span",{className:"rval"},fmt(r.newSubSw)),
-              h("span",{className:"rpct"},pctStr(r.nPct)),
-              h("span",{className:"rcomm"+(r.nComm===0?" zero":"")},fmt(r.nComm))
-            ),
-            h("div",{className:"commission-row"},
-              h("div",{className:"rlabel"},
-                h("div",null,"Renewal software value"),
-                h("div",{style:{fontSize:11,color:r.rRateTier?"var(--text-3)":"var(--warn)"}},
-                  r.rRateTier?"Rate unlocked: "+r.rRateTier.label+" \u2192 "+pctStr(r.rPct):"Base rate (3%) \u2014 new sub below RM 8,000")
-              ),
-              h("span",{className:"rval"},fmt(r.renewalSw)),
-              h("span",{className:"rpct"},pctStr(r.rPct)),
-              h("span",{className:"rcomm"+(r.rComm===0?" zero":"")},fmt(r.rComm))
-            ),
-            h("div",{className:"commission-total"},h("span",null,"Total Commission"),h("span",null,fmt(r.totalCommission)))
-          )),
-        managerOverride&&h("div",{className:"commission-card",style:{marginTop:8}},
-          h("div",{className:"chead",style:{background:"#f0fdf4",borderColor:"#bbf7d0"}},
-            h("h3",{style:{color:"var(--success)"}},"\uD83C\uDFC5 Your Override Commission"),
-            h("span",{style:{fontSize:12,color:"var(--success)"}},myTeam.overridePct+"% of team payout")
-          ),
-          h("div",{className:"commission-row"},
-            h("div",{className:"rlabel"},
-              h("div",null,"Team total commission"),
-              h("div",{style:{fontSize:11,color:"var(--text-3)"}},"Sum of all team members' commission this period")
-            ),
-            h("span",{className:"rval"},fmt(managerOverride.teamTotalCommission)),
-            h("span",{className:"rpct"},pctStr(managerOverride.overridePct)),
-            h("span",{className:"rcomm"},fmt(managerOverride.overrideAmt))
-          ),
-          h("div",{className:"commission-total",style:{background:"#f0fdf4"}},
-            h("span",null,"Your override commission"),
-            h("span",{style:{color:"var(--success)"}},fmt(managerOverride.overrideAmt))
+              h("ul",{style:{listStyle:"none",padding:0,margin:0}},
+                (t.members||[]).length===0?h("li",{style:{fontSize:12,color:"var(--t3)",padding:"6px 0"}},"No members."):
+                (t.members||[]).map(m=>h("li",{key:m,className:"tmr"},h("span",null,m),h("span",{style:{fontSize:11,color:"var(--t3)"}},"sales")))
+              )
+            ))
           )
         )
       )
