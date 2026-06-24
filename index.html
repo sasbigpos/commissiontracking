@@ -444,8 +444,16 @@ function App(){
       if(isN){nSP[sp]=(nSP[sp]||0)+sw;nBr[br]=(nBr[br]||0)+sw;}
       if(isR){rSP[sp]=(rSP[sp]||0)+sw;rBr[br]=(rBr[br]||0)+sw;}
       if(i.remark&&i.remark.trim()){
-        const k=i.remark.trim(); if(!prods[k]) prods[k]={label:k,count:0,val:0,ns:0,rn:0};
-        prods[k].count++;prods[k].val+=tot;if(isN)prods[k].ns++;if(isR)prods[k].rn++;
+        // Split remark by comma to extract individual products
+        const items=i.remark.split(",").map(s=>s.trim()).filter(s=>s.length>0);
+        const share=items.length>0?tot/items.length:0;
+        items.forEach(k=>{
+          if(!prods[k]) prods[k]={label:k,count:0,val:0,ns:0,rn:0};
+          prods[k].count++;
+          prods[k].val+=share;
+          if(isN) prods[k].ns++;
+          if(isR) prods[k].rn++;
+        });
       }
     });
     const arr=o=>Object.entries(o).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
@@ -646,11 +654,11 @@ function App(){
         ),
         h("div",{className:"card",style:{marginTop:4}},
           h("h4",{style:{marginBottom:4}},"Products Purchased Analysis"),
-          h("p",{style:{fontSize:12,color:"var(--t3)",marginBottom:"1rem"}},ana.prods.length+" unique product entries."),
+          h("p",{style:{fontSize:12,color:"var(--t3)",marginBottom:"1rem"}},ana.prods.length+" unique products extracted from invoice remarks. Value is apportioned equally when multiple products appear in the same invoice."),
           ana.prods.length===0?h("p",{style:{color:"var(--t3)",textAlign:"center",padding:"1.5rem"}},"Fill in invoice remarks to see product analysis."):
           h("div",{style:{overflowX:"auto"}},
             h("table",{className:"pt"},
-              h("thead",null,h("tr",null,h("th",null,"#"),h("th",null,"Product / Remark"),h("th",{style:{textAlign:"right"}},"Count"),h("th",{style:{textAlign:"right"}},"New Sub"),h("th",{style:{textAlign:"right"}},"Renewal"),h("th",{style:{textAlign:"right"}},"Total Value"))),
+              h("thead",null,h("tr",null,h("th",null,"#"),h("th",null,"Product"),h("th",{style:{textAlign:"right"}},"Appearances"),h("th",{style:{textAlign:"right"}},"New Sub"),h("th",{style:{textAlign:"right"}},"Renewal"),h("th",{style:{textAlign:"right"}},"Apportioned Value"))),
               h("tbody",null,ana.prods.slice(0,50).map((p,i)=>h("tr",{key:i},
                 h("td",{style:{color:"var(--t3)",width:30}},i+1),
                 h("td",null,p.label),
