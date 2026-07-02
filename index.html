@@ -19,14 +19,20 @@
   --text:#111827;--t2:#4b5563;--t3:#9ca3af;
   --r:10px;--sh:0 1px 4px rgba(0,0,0,.07);
 }
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--border:#334155;
+  --pl:#1e3a5f;--dl:#3b1219;--wl:#3b2800;
+  --text:#f1f5f9;--t2:#94a3b8;--t3:#475569;
+  --sh:0 1px 4px rgba(0,0,0,.4);
+}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;transition:background .2s,color .2s;}
 h1,h2,h3,h4{margin:0 0 .5rem;}p{margin:0;}
-input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:#fff;font-family:inherit;outline:none;transition:border-color .15s;}
+input,select,textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text);background:var(--surface);font-family:inherit;outline:none;transition:border-color .15s,background .2s;}
 input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
 input:disabled,select:disabled{background:var(--bg);color:var(--t2);}
 label{display:block;font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px;}
 textarea{resize:vertical;min-height:60px;}
-button{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;transition:background .12s,border-color .12s;}
+button{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;transition:background .12s,border-color .12s;}
 button:hover{background:var(--bg);}
 button.primary{background:var(--primary);color:#fff;border-color:var(--primary);}
 button.primary:hover{background:#1d4ed8;}
@@ -41,7 +47,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;}
 thead th{text-align:left;padding:8px 10px;font-weight:600;font-size:12px;color:var(--t2);border-bottom:2px solid var(--border);white-space:nowrap;background:var(--bg);}
 tbody td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 tbody tr:last-child td{border-bottom:none;}
-tbody tr:hover{background:#f9fafb;}
+tbody tr:hover{background:var(--bg);}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
 .bg{background:#dcfce7;color:#15803d;}.by{background:#fef9c3;color:#a16207;}
 .sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;}
@@ -76,7 +82,6 @@ tbody tr:hover{background:#f9fafb;}
 .err{color:var(--danger);font-size:12px;margin-top:6px;padding:8px 10px;background:var(--dl);border-radius:6px;}
 .pill{display:inline-block;border-radius:999px;padding:1px 10px;font-size:11px;font-weight:600;}
 .pill-g{background:var(--bg);color:var(--t2);border:1px solid var(--border);}
-.sdiv{border:none;border-top:2px dashed var(--border);margin:1rem 0;}
 .tnote{font-size:12px;color:var(--t2);margin-top:10px;}
 .tnote-ok{color:var(--success);}
 .tc-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:1rem;}
@@ -91,14 +96,13 @@ tbody tr:hover{background:#f9fafb;}
 .rb1{background:#dbeafe;color:#1d4ed8;}.rb2{background:#bfdbfe;color:#1e40af;}.rb3{background:#93c5fd;color:#1e3a8a;}
 .rg1{background:#dcfce7;color:#15803d;}.rg2{background:#bbf7d0;color:#166534;}.rg3{background:#86efac;color:#14532d;}
 .rgr{background:var(--bg);color:var(--t2);border:1px solid var(--border);}
-.cb{background:#fff;border:1px solid #c7d9fd;border-radius:8px;padding:12px 14px;}
+.cb{background:var(--surface);border:1px solid #c7d9fd;border-radius:8px;padding:12px 14px;}
 .cl{font-size:12px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
 .team-card{border-left:4px solid var(--primary);}
 .team-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:8px;}
 .team-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;background:var(--pl);color:var(--primary);padding:3px 8px;border-radius:999px;}
 .tmr{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .tmr:last-child{border-bottom:none;}
-.or{background:#f0fdf4;border-top:2px solid var(--success);padding:10px 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 .mgr-b{font-size:11px;background:#fef9c3;color:#a16207;border:1px solid #fde68a;padding:2px 7px;border-radius:999px;font-weight:600;margin-left:6px;}
 .loading{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--t2);font-size:14px;}
 .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;}
@@ -109,6 +113,21 @@ tbody tr:hover{background:#f9fafb;}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--success);}
 .dot.saving{background:var(--warn);animation:pulse .8s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* User management */
+.um-table{width:100%;border-collapse:collapse;}
+.um-table th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);border-bottom:1px solid var(--border);}
+.um-table td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.um-table tr:last-child td{border-bottom:none;}
+.um-table tr:hover td{background:var(--bg);}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0;}
+.role-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;}
+.rb-admin{background:#eff4ff;color:#2563eb;border:1px solid #c7d9fd;}
+.rb-sales{background:var(--bg);color:var(--t2);border:1px solid var(--border);}
+.rb-mgr{background:#fef9c3;color:#a16207;border:1px solid #fde68a;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;margin-right:5px;}
+.um-you{font-size:11px;color:var(--primary);font-weight:600;}
+.theme-btn{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--t2);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:5px;}
+.theme-btn:hover{background:var(--bg);}
 /* Analytics */
 .agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:20px;}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;box-shadow:var(--sh);}
@@ -121,7 +140,7 @@ tbody tr:hover{background:#f9fafb;}
 .pt th{text-align:left;padding:6px 8px;font-weight:600;color:var(--t2);border-bottom:2px solid var(--border);background:var(--bg);}
 .pt td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top;}
 .pt tr:last-child td{border-bottom:none;}
-.pt tr:hover td{background:#f9fafb;}
+.pt tr:hover td{background:var(--bg);}
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;}
 .kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;text-align:center;}
 .kc .kv{font-size:22px;font-weight:700;}
@@ -143,6 +162,7 @@ tbody tr:hover{background:#f9fafb;}
 <body>
 <div id="root"></div>
 <script>
+
 // ── Firebase config ───────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyC1IUIIKGr9x5GEh6AuQPrV_4VroE6VbyU",
@@ -412,6 +432,7 @@ function exportCommissionPDF(repData, allOverrides, mgrOverride, rMonth, isAdmin
 // ── App ───────────────────────────────────────────────────────────────────────
 function App(){
   const [fbError,  setFbError]  = useState("");
+  const [darkMode, setDarkMode] = useState(()=>{ try{ return localStorage.getItem("theme")==="dark"; }catch(e){ return false; } });
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [users,    setUsers]    = useState([]);
@@ -432,7 +453,7 @@ function App(){
   const [aMonth,   setAMonth]   = useState("");
   const [aSeg,     setASeg]     = useState("person");
   const [newSales, setNewSales] = useState("");
-  const [newUF,    setNewUF]    = useState({u:"",p:"",n:""});
+  const [newUF,    setNewUF]    = useState({u:"",p:"",n:"",role:"sales",_show:false});
   const [teamF,    setTeamF]    = useState({name:"",mgr:"",pct:"5",members:[]});
   const [editTeam, setEditTeam] = useState(null);
   const [showTF,   setShowTF]   = useState(false);
@@ -440,15 +461,32 @@ function App(){
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(()=>{
+    document.documentElement.setAttribute("data-theme", darkMode?"dark":"light");
+    try{ localStorage.setItem("theme", darkMode?"dark":"light"); }catch(e){}
+  },[darkMode]);
+
+  useEffect(()=>{
     if(!IS_CONFIGURED){ setLoading(false); return; }
     if(!initFB()){ setFbError("Firebase init failed. Check config."); setLoading(false); return; }
     (async()=>{
       try{
-        let u=await fsAll("users");
-        if(u.length===0){ for(const x of DEFAULT_USERS) await fsSet("users",x.username,x); u=DEFAULT_USERS.map(x=>({...x,id:x.username})); }
-        setUsers(u);
+        let usersData=await fsAll("users");
+        if(usersData.length===0){ for(const x of DEFAULT_USERS) await fsSet("users",x.username,x); usersData=DEFAULT_USERS.map(x=>({...x,id:x.username})); }
+        setUsers(usersData);
         setInvoices(await fsAll("invoices"));
-        setTeams(await fsAll("teams"));
+        const teamsData = await fsAll("teams");
+        setTeams(teamsData);
+        const mgrNames = teamsData.map(t=>t.managerName);
+        for (const u of usersData) {
+          const shouldBeMgr = mgrNames.includes(u.name);
+          if (shouldBeMgr && u.role === "sales") {
+            await fsUpd("users", u.username, {role:"manager"});
+            u.role = "manager";
+          } else if (!shouldBeMgr && u.role === "manager") {
+            await fsUpd("users", u.username, {role:"sales"});
+            u.role = "sales";
+          }
+        }
         try{ const s=await db.collection("settings").doc("salesPeople").get(); if(s.exists) setSalesPpl(s.data().list||DEFAULT_SALES); else await db.collection("settings").doc("salesPeople").set({list:DEFAULT_SALES}); }catch(e){}
       }catch(e){ setFbError("Firestore error: "+e.message); }
       setLoading(false);
@@ -555,9 +593,9 @@ function App(){
     if(!newUF.u.trim()||!newUF.p.trim()||!newUF.n.trim()){ alert("Fill all fields."); return; }
     const un=newUF.u.trim().toLowerCase();
     if(users.some(u=>u.username.toLowerCase()===un)){ alert("Username exists."); return; }
-    const u={username:un,password:newUF.p.trim(),role:"sales",name:newUF.n.trim()};
+    const u={username:un,password:newUF.p.trim(),role:newUF.role||"sales",name:newUF.n.trim()};
     setSaving(true);
-    try{ await fsSet("users",un,u); setUsers(p=>[...p,{...u,id:un}]); if(!salesPpl.includes(u.name)) await saveSP([...salesPpl,u.name]); setNewUF({u:"",p:"",n:""}); }catch(e){ alert("Failed: "+e.message); }
+    try{ await fsSet("users",un,u); setUsers(p=>[...p,{...u,id:un}]); if(!salesPpl.includes(u.name)) await saveSP([...salesPpl,u.name]); setNewUF({u:"",p:"",n:"",role:"sales",_show:false}); }catch(e){ alert("Failed: "+e.message); }
     setSaving(false);
   }
   async function delUser(un){ if(!confirm("Remove user "+un+"?")) return; setSaving(true); try{ await fsDel("users",un); setUsers(p=>p.filter(u=>u.username!==un)); }catch(e){ alert(e.message); } setSaving(false); }
@@ -648,6 +686,7 @@ function App(){
       h("div",null,h("h1",null,"Sales Commission Tracker"),h("span",{style:{fontSize:12,color:"var(--t2)"}},"Signed in as ",h("strong",null,me.name)," - ",me.role)),
       h("div",{style:{display:"flex",alignItems:"center",gap:12}},
         h("div",{className:"sync"},h("div",{className:"dot"+(saving?" saving":"")}),saving?"Saving...":"Synced"),
+        h("button",{className:"theme-btn",onClick:()=>setDarkMode(d=>!d)},darkMode?"☀️ Light":"🌙 Dark"),
         h("button",{onClick:logout},"Sign out")
       )
     ),
@@ -919,20 +958,45 @@ function App(){
             h("button",{className:"primary",disabled:saving,onClick:()=>{const n=newSales.trim();if(n&&!salesPpl.includes(n)){saveSP([...salesPpl,n]);setNewSales("");}}},"Add")
           )
         ),
-        h("div",{className:"card"},
-          h("h3",{style:{marginBottom:"1rem"}},"User Accounts"),
-          h("ul",{style:{listStyle:"none",padding:0,margin:"0 0 1rem"}},
-            users.map(u=>h("li",{key:u.username||u.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}},
-              h("div",null,h("span",{style:{fontSize:13,fontWeight:500}},u.username),h("span",{style:{fontSize:12,color:"var(--t3)",marginLeft:6}},"("+u.role+") "+u.name),u.role==="manager"&&h("span",{className:"mgr-b"},"Manager")),
-              u.username!=="admin"&&h("button",{className:"icon db",disabled:saving,onClick:()=>delUser(u.username)},"x")
-            ))
+        h("div",{className:"card",style:{gridColumn:"1/-1"}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.25rem",flexWrap:"wrap",gap:8}},
+            h("div",null,h("h3",{style:{margin:0}},"User Management"),h("p",{style:{fontSize:12,color:"var(--t3)",marginTop:4}},"Manage accounts and assign access roles")),
+            h("button",{className:"primary",style:{fontSize:13},onClick:()=>setNewUF(f=>({...f,_show:!f._show}))},"+ Add User")
           ),
-          h("p",{style:{fontSize:12,color:"var(--t2)",marginBottom:8}},"Add sales person account:"),
-          h("div",{style:{display:"grid",gap:8}},
-            h("input",{placeholder:"Username",value:newUF.u,onChange:e=>setNewUF({...newUF,u:e.target.value})}),
-            h("input",{placeholder:"Password",value:newUF.p,onChange:e=>setNewUF({...newUF,p:e.target.value})}),
-            h("input",{placeholder:"Display name",value:newUF.n,onChange:e=>setNewUF({...newUF,n:e.target.value})}),
-            h("button",{className:"primary",disabled:saving,onClick:addUser},"Add User")
+          h("div",{style:{display:"flex",gap:12,marginBottom:"1.25rem",flexWrap:"wrap"}},
+            h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 16px",minWidth:180}},h("span",{className:"role-badge rb-admin",style:{marginBottom:6,display:"inline-block"}},"Admin"),h("p",{style:{fontSize:11,color:"var(--t2)",marginTop:4}},"Full access: manage users, settings, all data")),
+            h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 16px",minWidth:180}},h("span",{className:"role-badge rb-mgr",style:{marginBottom:6,display:"inline-block"}},"Manager"),h("p",{style:{fontSize:11,color:"var(--t2)",marginTop:4}},"Manage own and team invoices, team commission")),
+            h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 16px",minWidth:180}},h("span",{className:"role-badge rb-sales",style:{marginBottom:6,display:"inline-block"}},"Sales"),h("p",{style:{fontSize:11,color:"var(--t2)",marginTop:4}},"Log own invoices, view own commission"))
+          ),
+          newUF._show&&h("div",{style:{background:"var(--bg)",border:"1px solid var(--border)",borderRadius:8,padding:"1rem",marginBottom:"1rem"}},
+            h("h4",{style:{marginBottom:12,fontSize:13}},"New User Account"),
+            h("div",{className:"g2",style:{marginBottom:10}},
+              h("div",null,h("label",null,"Username"),h("input",{placeholder:"e.g. john",value:newUF.u,onChange:e=>setNewUF({...newUF,u:e.target.value})})),
+              h("div",null,h("label",null,"Password"),h("input",{placeholder:"Password",type:"password",value:newUF.p,onChange:e=>setNewUF({...newUF,p:e.target.value})})),
+              h("div",null,h("label",null,"Display Name"),h("input",{placeholder:"e.g. John Doe",value:newUF.n,onChange:e=>setNewUF({...newUF,n:e.target.value})})),
+              h("div",null,h("label",null,"Role"),h("select",{value:newUF.role||"sales",onChange:e=>setNewUF({...newUF,role:e.target.value})},h("option",{value:"sales"},"Sales"),h("option",{value:"admin"},"Admin")))
+            ),
+            h("div",{style:{display:"flex",gap:8}},h("button",{className:"primary",disabled:saving,onClick:addUser},"Add User"),h("button",{onClick:()=>setNewUF({u:"",p:"",n:"",role:"sales",_show:false})},"Cancel"))
+          ),
+          h("div",{style:{overflowX:"auto"}},
+            h("table",{className:"um-table"},
+              h("thead",null,h("tr",null,h("th",null,"Name"),h("th",null,"Username"),h("th",null,"Role"),h("th",null,"Status"),h("th",null,"Actions"))),
+              h("tbody",null,
+                users.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).map(u=>{
+                  const initials=(u.name||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+                  const avatarColors=["#2563eb","#16a34a","#d97706","#7c3aed","#db2777","#0891b2","#ea580c"];
+                  const avatarBg=avatarColors[(u.name||"A").charCodeAt(0)%avatarColors.length];
+                  const isMe=u.username===me.username;
+                  return h("tr",{key:u.username||u.id},
+                    h("td",null,h("div",{style:{display:"flex",alignItems:"center",gap:10}},h("div",{className:"avatar",style:{background:avatarBg}},initials),h("div",null,h("div",{style:{fontWeight:600,fontSize:13}},u.name),isMe&&h("div",{className:"um-you"},"You")))),
+                    h("td",{style:{fontSize:13,color:"var(--t2)"}},u.username),
+                    h("td",null,h("span",{className:"role-badge "+(u.role==="admin"?"rb-admin":u.role==="manager"?"rb-mgr":"rb-sales")},u.role==="admin"?"Admin":u.role==="manager"?"Manager":"Sales")),
+                    h("td",null,h("span",null,h("span",{className:"status-dot"}),"Active")),
+                    h("td",null,!isMe&&u.username!=="admin"&&h("button",{className:"icon db",disabled:saving,onClick:()=>delUser(u.username)},"Del"))
+                  );
+                })
+              )
+            )
           )
         ),
         h("div",{className:"card",style:{gridColumn:"1 / -1"}},
@@ -988,6 +1052,7 @@ function App(){
 }
 
 ReactDOM.render(React.createElement(App), document.getElementById("root"));
+
 </script>
 </body>
 </html>
